@@ -1,0 +1,71 @@
+---
+# Install ioncube on Debian systems
+
+# Determine path to PHP installation
+- name: Get PHP install path
+  shell: php -i | grep 'extension_dir => /usr' | awk -F '=> ' '{print $3}'
+  register: php_path
+
+# save bandwidth and check if ioncube loader file exists to not download again
+- name: Check if ioncube loader exists
+  stat:
+    path: "{{ php_path.stdout }}/ioncube/ioncube_loader_{{ 'fre_11' if ansible_system == 'FreeBSD' else 'lin' }}_{{ php_version }}.so"
+  register: ioncube_loader_file
+
+- name: Create directory for ioncube loaders
+  file:
+    path: "{{ php_path.stdout }}/ioncube/"
+    state: directory
+  when: not ioncube_loader_file.stat.exists
+
+# Download the ioncubeloader files from web and extract the required version
+- name: Copy ioncube loader files from web
+  unarchive:
+    remote_src: yes
+    src: "http://downloads.ioncube.com/loader_downloads/ioncube_loaders_{{ 'fre_11' if ansible_system == 'FreeBSD' else 'lin' }}_x86-64.zip"
+    dest: "{{ php_path.stdout }}"
+    include: "ioncube/ioncube_loader_{{ 'fre_11' if ansible_system == 'FreeBSD' else 'lin' }}_{{ php_version }}.so"
+    mode: 0644
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+  when: php.install_ioncube_loaders and not ioncube_loader_file.stat.exists
+
+# Create ioncube config file
+- name: Create ioncube config file
+  template:
+    src: templates/00-ioncube.ini.j2
+    dest: "{{ etc_path }}php/{{ php_version }}/mods-available/00-ioncube.ini"
+    mode: 0644
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+  when: php.install_ioncube_loaders and ansible_os_family == 'Debian'
+  notify: restart php-fpm
+
+# Create a symbolic link to make ioncube loaders load on next fpm start
+- name: Activate ioncube loaders
+  file:
+    src: "{{ etc_path }}php/{{ php_version }}/mods-available/00-ioncube.ini"
+    dest: "{{ etc_path }}php/{{ php_version }}/fpm/conf.d/00-ioncube.ini"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    state: "{{ php.install_ioncube_loaders | ternary('link', 'absent') }}"
+  when: php.install_ioncube_loaders and ansible_os_family == 'Debian'
+  notify: restart php-fpm
+
+- name: "{{ php.install_ioncube_loaders | ternary('Enable', 'Disabled') | default('Disabled') }} ioncube for php{{ php_version }}"
+  file:
+    path: "{{ etc_path }}php/{{ php_version }}/fpm/conf.d/00-ioncube.ini"
+    state: "{{ php.install_ioncube_loaders | ternary('file', 'absent') | default('absent') }}"
+  when: ansible_os_family == 'Debian'
+  notify: restart php-fpm
+
+# Add the zend_extension line at the very top of php.ini
+- name: Add ioncube to php config
+  lineinfile:
+    path: "{{ php_ini_path.stdout }}/php.ini"
+    search_string: "zend_extension = '{{ php_path.stdout }}/ioncube/ioncube_loader_"
+    insertafter: '\[PHP\]'
+    firstmatch: yes
+    line: "{{ php.install_ioncube_loaders | ternary('zend_extension = \"' + php_path.stdout + '/ioncube/ioncube_loader_' + ('fre_11_' if ansible_system == 'FreeBSD' else 'lin_') + php_version + '.so\"', '') | default('') }}"
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'FreeBSD'
+  notify: restart php-fpm

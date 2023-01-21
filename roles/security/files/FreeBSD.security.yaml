@@ -1,0 +1,48 @@
+---
+#
+# You can add as many additional settings as you like.
+# You can remove unneeded settings by just deleting the lines.
+# Be sure to always add or remove the full name/value pair.
+# Make sure to use the correct data type (string, integer etc.).
+# Escape quatation marks where neccessary according yaml standards.
+#
+rkhunter:
+  enable: true
+  runDaily: true
+  autoDatabaseUpdates: true
+  settings:
+    - name: UPDATE_MIRRORS
+      value: 1
+    - name: MIRRORS_MODE
+      value: 0
+    - name: WEB_CMD
+      value: ""
+    - name: LANGUAGE
+      value: "en"
+    # below this line edit with caution
+    - name: TMPDIR
+      value: "/usr/local/var/lib/rkhunter/tmp"
+    - name: DBDIR
+      value: "/usr/local/var/lib/rkhunter/db"
+    - name: SCRIPTDIR
+      value: "/usr/local/lib/rkhunter/scripts"
+    - name: LOGFILE
+      value: "/var/log/rkhunter.log"
+    - name: USE_SYSLOG
+      value: "authpriv.warning"
+    - name: AUTO_X_DETECT
+      value: 1
+    - name: ALLOW_SSH_PROT_V1
+      value: 2
+    - name: ENABLE_TESTS
+      value: "ALL"
+    - name: DISABLE_TESTS
+      value: "suspscan hidden_ports hidden_procs deleted_files packet_cap_apps apps"
+    - name: INSTALLDIR
+      value: "/usr"
+  propupd: true # seto to true to scan the filesystem with rkhunter once to set these values as clean
+clamav:
+  enable: true
+  customerDataDir: "/var/customers"
+  quarantineDir: "/home/clamavinfected" # do not put it into /tmp in case of false positives
+  maxFileSize: "2G"

@@ -1,0 +1,13 @@
+---
+# System packages for Debian
+system_packages:
+  - apache2-utils
+  - apt-utils
+  - bzip2
+  - curl
+  - debconf-utils
+  - git
+  - tar
+  - unzip
+  - wget
+  - zip

@@ -1,0 +1,4 @@
+---
+# Nss packages for FreeBSD
+nss_packages:
+  - libnss-mysql

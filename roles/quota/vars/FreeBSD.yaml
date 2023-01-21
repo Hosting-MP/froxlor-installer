@@ -1,0 +1,2 @@
+---
+# Quota packages for FreeBSD are not needed because Quota is integrated natively into the system

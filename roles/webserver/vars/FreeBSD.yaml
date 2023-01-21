@@ -1,0 +1,8 @@
+---
+# WebServer packages for FreeBSD 
+apache2_packages:
+  - apache24
+  - ap24-mod_security
+  - ap24-mod_evasive
+nginx_packages:
+  - nginx

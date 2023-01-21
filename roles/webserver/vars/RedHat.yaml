@@ -1,0 +1,11 @@
+---
+# WebServer packages for RedHat
+apache2_packages:
+  - httpd
+  - mod_http2
+  - mod_security
+  - mod_security_crs
+  - mod_ssl
+#  - mod_evasive
+nginx_packages:
+  - nginx

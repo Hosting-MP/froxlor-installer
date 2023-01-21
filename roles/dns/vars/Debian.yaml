@@ -1,0 +1,7 @@
+---
+# DNS packages for Debian
+bind_packages:
+  - bind9
+powerdns_packages:
+  - pdns-server
+  - pdns-backend-mysql

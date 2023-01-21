@@ -1,0 +1,52 @@
+---
+# Execute tasks to install and configure proftpd
+
+- name: Create proftpd config directory
+  file:
+    path: "{{ etc_path }}proftpd/conf.d/"
+    state: directory
+
+- name: Create modules config for proftpd
+  template:
+    src: templates/proftpd/modules.conf.j2
+    dest: "{{ etc_path }}proftpd/modules.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart proftpd
+
+- name: Create tls config for proftpd
+  template:
+    src: templates/proftpd/tls.conf.j2
+    dest: "{{ etc_path }}proftpd/conf.d/tls.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart proftpd
+
+- name: Create ban config for proftpd
+  template:
+    src: templates/proftpd/ban.conf.j2
+    dest: "{{ etc_path }}proftpd/conf.d/ban.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart proftpd
+
+- name: Create sql config for proftpd
+  template:
+    src: templates/proftpd/sql.conf.j2
+    dest: "{{ etc_path }}proftpd/sql.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0600
+  notify: restart proftpd
+
+- name: Create config for proftpd
+  template:
+    src: templates/proftpd/proftpd.conf.j2
+    dest: "{{ etc_path }}{{ 'proftpd/' if ansible_os_family == 'Debian' }}proftpd.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart proftpd

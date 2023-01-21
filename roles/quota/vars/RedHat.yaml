@@ -1,0 +1,5 @@
+---
+# Quota packages for RedHat
+quota_packages:
+  - quota
+  - quotatool

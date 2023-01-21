@@ -1,0 +1,53 @@
+---
+# Execute tasks for Debian
+
+# Create main config file for dovecot
+- name: Create config for dovecot
+  template:
+    src: templates/dovecot/dovecot.conf.j2
+    dest: "{{ etc_path }}dovecot/dovecot.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart dovecot
+
+# Create sql config file for dovecot
+- name: Create sql config for dovecot
+  template:
+    src: templates/dovecot/dovecot-sql.conf.ext.j2
+    dest: "{{ etc_path }}dovecot/dovecot-sql.conf.ext"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0600
+  notify: restart dovecot
+
+# Create additional config file for dovecot
+- name: Create extension config files for dovecot
+  copy:
+    src: "{{ item }}"
+    dest: "{{ etc_path }}dovecot/conf.d/"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  loop: "{{ query('fileglob', 'templates/dovecot/conf.d/*.conf') }}"
+  notify: restart dovecot
+
+# Create auth setting file for dovecot
+- name: Create auth setting for dovecot
+  template:
+    src: templates/dovecot/conf.d/10-auth.conf.j2
+    dest: "{{ etc_path }}dovecot/conf.d/10-auth.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart dovecot
+
+# Create ssl setting file for dovecot
+- name: Create ssl setting for dovecot
+  template:
+    src: templates/dovecot/conf.d/10-ssl.conf.j2
+    dest: "{{ etc_path }}dovecot/conf.d/10-ssl.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart dovecot

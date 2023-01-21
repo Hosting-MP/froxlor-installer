@@ -1,0 +1,6 @@
+---
+# Mail packages for FreeBSD
+dovecot_packages:
+  - dovecot-pigeonhole
+postfix_packages:
+  - postfix-mysql

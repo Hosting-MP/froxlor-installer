@@ -1,0 +1,4 @@
+---
+# System packages for RedHat
+database_packages:
+  - "{{ database.engine }}-server"

@@ -1,0 +1,20 @@
+# Dynamic ban lists (http://www.proftpd.org/docs/contrib/mod_ban.html)
+<IfModule mod_ban.c>
+  BanEngine                     on
+  BanLog                        /var/log/proftpd/ban.log
+  BanTable                      /run/proftpd/ban.tab
+
+  # If the same client reaches the MaxLoginAttempts limit 2 times
+  # within 10 minutes, automatically add a ban for that client that
+  # will expire after one hour.
+  BanOnEvent                    MaxLoginAttempts 2/00:10:00 01:00:00
+  
+  # Do not allow root login via proftpd
+  BanOnEvent                    RootLogin 2/00:10:00 00:03:00
+
+  # Inform the user that it's not worth persisting
+  BanMessage                    "Host %a has been banned"
+
+  # Allow the FTP admin to manually add/remove bans
+  BanControlsACLs               all allow user ftpadm
+</IfModule>

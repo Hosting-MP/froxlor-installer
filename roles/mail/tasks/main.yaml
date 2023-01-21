@@ -1,0 +1,115 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+#
+# START TASK to build FreeBSD mail ports
+#
+
+- name: Fetch latest ports (THIS CAN TAKE MORE THAN ONE HOUR)
+  command:
+    cmd: portsnap cron
+    creates: /var/db/portsnap/files/
+  when: ansible_os_family == "FreeBSD"
+
+- name: Extract fetched ports (this can take a while)
+  command:
+    cmd: portsnap extract
+    creates: /usr/ports/
+  when: ansible_os_family == "FreeBSD"
+
+#- name: Extract postfix port
+#  command:
+#    cmd: portsnap extract mail/postfix
+#    creates: /usr/ports/mail/postfix/
+#  when: froxlor_settings.mtaserver == 'postfix'
+
+#- name: Extract dovecot port
+#  command:
+#    cmd: portsnap extract mail/dovecot
+#    creates: /usr/ports/mail/dovecot/
+#  when: froxlor_settings.mdaserver == 'dovecot'
+
+#- name: Add MySQL as build dependency for postfix
+#  lineinfile:
+#    path: /usr/ports/mail/postfix/Makefile
+#    regexp: '^OPTIONS_DEFAULT\?=(.*(?<!MYSQL))$'
+#    line: 'OPTIONS_DEFAULT?=\1 MYSQL'
+#    backrefs: yes
+#    owner: root
+#    group: wheel
+#    mode: 0644
+#  when: ansible_os_family == "FreeBSD"
+
+- name: Add MySQL as build dependency for dovecot
+  lineinfile:
+    path: /usr/ports/mail/dovecot/Makefile
+    regexp: '^OPTIONS_DEFAULT=(.*(?<!MYSQL))$'
+    line: 'OPTIONS_DEFAULT=\1 MYSQL'
+    backrefs: yes
+    owner: root
+    group: wheel
+    mode: 0644
+  when: ansible_os_family == "FreeBSD"
+
+#- name: Install postfix
+#  community.general.portinstall:
+#    name: mail/postfix
+#    use_packages: no
+#    state: "{{ (froxlor_settings.mtaserver == 'postfix') | ternary('present', 'absent', 'absent') }}"
+#  when: ansible_os_family == "FreeBSD"
+
+- name: Install dovecot
+  community.general.portinstall:
+    name: mail/dovecot
+    use_packages: no
+    state: "{{ (froxlor_settings.mdaserver == 'dovecot') | ternary('present', 'absent', 'absent') }}"
+  when: ansible_os_family == "FreeBSD"
+#
+# END TASK
+#
+
+- name: "Debian | Packages | Set debconf postfix main mailer type"
+  debconf:
+    name: postfix
+    question: "postfix/main_mailer_type"
+    value: "{{ postfix_debconf_main_mailer_type | default('No Configuration') }}"
+    vtype: select
+  when: ansible_os_family == "Debian"
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ postfix_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.mtaserver == 'postfix')|default(false) }}"
+      - package_list: "{{ dovecot_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.mdaserver == 'dovecot')|default(false) }}"
+
+# Check if ssl-files for own-froxlor-vhost exist
+- name: Check if own-froxlor-vhost key exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key"
+  register: vhost_ssl_key
+- name: Check if own-froxlor-vhost cert exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.crt"
+  register: vhost_ssl_crt
+- name: Check if own-froxlor-vhost CA exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_CA.pem"
+  register: vhost_ssl_ca
+- name: Check if own-froxlor-vhost cert-chain exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_chain.pem"
+  register: vhost_ssl_chain
+
+# Add mta install instructions
+- name: Run tasks to setup mta server
+  include_tasks: "{{ froxlor_settings.mtaserver }}.yaml"
+  when: froxlor_settings.mtaserver == 'postfix'
+
+# Add mda install instructions
+- name: Run tasks to setup mda server
+  include_tasks: "{{ froxlor_settings.mdaserver }}.yaml"
+  when: froxlor_settings.mdaserver == 'dovecot'

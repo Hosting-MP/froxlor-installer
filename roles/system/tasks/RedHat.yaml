@@ -1,0 +1,53 @@
+---
+# Execute tasks for RHEL
+
+#
+# Setup DNF
+#
+- name: Install epel release for libnss and other packages
+  dnf:
+    name: epel-release
+    enablerepo: extras
+    state: latest
+    update_cache: yes
+
+- name: Upgrade all packages
+  dnf:
+    name: '*'
+    state: latest
+    update_cache: yes
+    install_weak_deps: no
+
+- name: Upgrade all packages
+  dnf:
+    name: "{{ system_packages|default([]) }}"
+    state: latest
+    install_weak_deps: no
+#    autoremove: yes
+
+- name: Add powertools to enabled repos
+  community.general.ini_file:
+    path: "{{ etc_path }}yum.repos.d/{{ (ansible_distribution_major_version|int > 8) | ternary('almalinux-crb' if ('Alma' in ansible_distribution) else 'rocky' if ('Rocky' in ansible_distribution) else 'centos', 'almalinux-powertools' if ('Alma' in ansible_distribution) else 'Rocky-PowerTools' if ('Rocky' in ansible_distribution) else 'CentOS-Stream-PowerTools' if ('Stream' in ansible_distribution_release) else 'CentOS-Linux-PowerTools') | default('crb') }}.repo"
+    section: "{{ (ansible_distribution_major_version|int > 8) | ternary('crb', 'powertools') | default('crb') }}"
+    option: enabled
+    value: "1"
+    no_extra_spaces: yes
+    group: root
+    owner: root
+    mode: 0644
+  notify: update dnf cache
+
+#
+# Set to unified timezone
+#
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ main_timezone | default('UTC') }}"
+  notify: restart cron
+
+#
+# Set hostname to froxlor hostname
+#
+- name: Set hostname
+  hostname:
+    name: "{{ froxlor_settings.hostname | default(ansible_hostname) }}"

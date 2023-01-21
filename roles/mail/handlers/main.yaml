@@ -1,0 +1,14 @@
+---
+# handlers file for froxlorInstaller
+- name: restart dovecot
+  service:
+    name: dovecot
+    state: restarted
+    enabled: yes
+- name: restart postfix
+  service:
+    name: postfix
+    state: restarted
+    enabled: yes
+- name: newaliases
+  command: newaliases

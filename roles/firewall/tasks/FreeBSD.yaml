@@ -1,0 +1,57 @@
+---
+# Execute tasks for Debian
+
+- name: disable excessive firewall logging
+  lineinfile:
+    path: /etc/rc.conf
+    search_string: 'firewall_quiet='
+    line: 'firewall_quiet="YES"'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ firewall.enable | ternary('present', 'absent') }}"
+  notify: restart ipfw
+
+- name: set firewall profil to workstation
+  lineinfile:
+    path: /etc/rc.conf
+    search_string: 'firewall_type='
+    line: 'firewall_type="workstation"'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ firewall.enable | ternary('present', 'absent') }}"
+  notify: restart ipfw
+
+- name: disable ip restrictions for firewall
+  lineinfile:
+    path: /etc/rc.conf
+    search_string: 'firewall_allowservices='
+    line: 'firewall_allowservices="any"'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ firewall.enable | ternary('present', 'absent') }}"
+  notify: restart ipfw
+
+- name: allow selected services to pass the firewall
+  lineinfile:
+    path: /etc/rc.conf
+    search_string: 'firewall_myservices='
+    line: 'firewall_myservices="ssh http https ftp domain domain-s nicname ntp smtp smtps submission imap imaps pop3 pop3s bootpc dhcpv6-client dhcp-failover"'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ firewall.enable | ternary('present', 'absent') }}"
+  notify: restart ipfw
+
+- name: reduce logging from single client source
+  lineinfile:
+    path: /etc/sysctl.conf
+    search_string: 'net.inet.ip.fw.verbose_limit='
+    line: 'net.inet.ip.fw.verbose_limit=5'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ firewall.enable | ternary('present', 'absent') }}"
+  notify: restart ipfw

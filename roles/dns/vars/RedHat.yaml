@@ -1,0 +1,7 @@
+---
+# DNS packages for RedHat
+bind_packages:
+  - bind
+powerdns_packages:
+  - pdns
+  - pdns-backend-mysql

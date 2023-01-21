@@ -1,0 +1,6 @@
+---
+# Security packages for FreeBSD
+clamav_packages:
+  - clamav
+rkhunter_packages:
+  - rkhunter

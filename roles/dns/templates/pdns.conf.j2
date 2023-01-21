@@ -1,0 +1,31 @@
+allow-axfr-ips=127.0.0.0/8,::1,{{ froxlor_settings.axfrservers }}
+also-notify={{ froxlor_settings.axfrservers }}
+{% if ansible_os_family == 'Debian' %}
+config-dir={{ etc_path }}powerdns/
+{% elif ansible_os_family == 'RedHat' %}
+config-dir={{ etc_path }}pdns/
+{% elif ansible_os_family == 'FreeBSD' %}
+config-dir={{ etc_path }}pdns/
+{% endif %}
+daemon=yes
+guardian=yes
+local-address={{ froxlor_ip_list | join(',') }}
+master=yes
+setgid=pdns
+setuid=pdns
+version-string=powerdns
+{% if powerdns.enable_webserver %}
+webserver=yes
+webserver-address=127.0.0.1
+webserver-allow-from=127.0.0.1,::1
+webserver-password=
+webserver-port=8081
+{% endif %}
+# include froxlor-bind-specific config
+{% if ansible_os_family == 'Debian' %}
+include-dir={{ etc_path }}powerdns/froxlor/
+{% elif ansible_os_family == 'RedHat' %}
+include-dir={{ etc_path }}pdns/froxlor/
+{% elif ansible_os_family == 'FreeBSD' %}
+include-dir={{ etc_path }}pdns/froxlor/
+{% endif %}

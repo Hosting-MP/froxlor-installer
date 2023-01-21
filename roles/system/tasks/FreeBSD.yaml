@@ -1,0 +1,42 @@
+---
+# Execute tasks for FreeBSD
+
+#
+# Setup PKG
+#
+- name: Update all packages to their latest version
+  command: "pkg update && pkg upgrade -y"
+  when: "ansible_version.full is version('2.9', '<=')"
+
+- name: Install required packages
+  command: "pkg install -y {{ system_packages | join(' ') }}"
+  when: "ansible_version.full is version('2.9', '<=')"
+
+- name: Upgrade all installed packages
+  community.general.pkgng:
+    name: "*"
+    state: latest
+  when: "ansible_version.full is version('2.10', '>=')"
+
+- name: Upgrade all installed packages
+  community.general.pkgng:
+    name: "{{ system_packages|default([]) }}"
+    state: latest
+#    autoremove: yes
+  when: "ansible_version.full is version('2.10', '>=')"
+
+
+#
+# Set to unified timezone
+#
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ main_timezone | default('UTC') }}"
+  notify: restart cron
+
+#
+# Set hostname to froxlor hostname
+#
+- name: Set hostname
+  hostname:
+    name: "{{ froxlor_settings.hostname | default(ansible_hostname) }}"

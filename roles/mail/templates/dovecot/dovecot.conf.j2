@@ -1,0 +1,33 @@
+## Dovecot configuration file
+
+# Enable installed protocols
+{% if ansible_os_family == 'Debian' %}
+!include_try /usr/share/dovecot/protocols.d/*.protocol
+{% elif ansible_os_family == 'RedHat' %}
+protocols = imap pop3 sieve
+{% elif ansible_os_family == 'FreeBSD' %}
+protocols = imap pop3 sieve
+{% endif %}
+
+# Listen on IPv4 and IPv6
+listen = *, ::
+
+# Base directory where to store runtime data.
+base_dir = /var/run/dovecot/
+
+# Greeting message for clients.
+login_greeting = Mailserver at {{ froxlor_settings.hostname }} ready.
+
+dict {
+  #quota = mysql:/etc/dovecot/dovecot-dict-sql.conf.ext
+  #expire = sqlite:/etc/dovecot/dovecot-dict-sql.conf.ext
+}
+
+# Most of the actual configuration gets included below. The filenames are
+# first sorted by their ASCII value and parsed in that order. The 00-prefixes
+# in filenames are intended to make it easier to understand the ordering.
+!include conf.d/*.conf
+
+# A config file can also tried to be included without giving an error if
+# it's not found:
+!include_try local.conf

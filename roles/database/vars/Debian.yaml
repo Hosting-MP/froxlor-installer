@@ -1,0 +1,4 @@
+---
+# System packages for Debian
+database_packages:
+  - "{{ database.engine }}-server"

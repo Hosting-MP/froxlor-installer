@@ -1,0 +1,12 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'load-vars.yaml'
+
+# Add system setup instructions
+- name: Set global vars
+  include_tasks: "froxlor.yaml"
+
+# Add system setup instructions
+- name: Run tasks to setup the system
+  include_tasks: "{{ ansible_os_family }}.yaml"

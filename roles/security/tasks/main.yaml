@@ -1,0 +1,34 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+# Copy config file to user space if it does not exist already
+- name: Copy premade config file to user space
+  copy:
+    src: "files/{{ ansible_system }}.security.yaml"
+    dest: "{{ etc_path }}froxlor/security.yaml"
+    force: no
+  register: froxlor_security_config_file
+
+# Load config file found in user space
+- name: Load config file from user space
+  include_vars: "{{ froxlor_security_config_file.dest }}"
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ clamav_packages|default([]) }}"
+        package_status: "{{ clamav.enable|default(false) }}"
+      - package_list: "{{ rkhunter_packages|default([]) }}"
+        package_status: "{{ rkhunter.enable|default(false) }}"
+
+# Add clamav install instructions
+- name: Run tasks to setup clamav
+  include_tasks: "clamav.yaml"
+  when: clamav.enable
+
+# Add mda install instructions
+- name: Run tasks to setup rkhunter
+  include_tasks: "rkhunter.yaml"
+  when: rkhunter.enable

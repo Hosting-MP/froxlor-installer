@@ -1,0 +1,63 @@
+---
+#
+# You can add as many additional settings as you like.
+# You can remove unneeded settings by just deleting the lines.
+# Be sure to always add or remove the full name/value pair.
+# Make sure to use the correct data type (string, integer etc.).
+# Escape quatation marks where neccessary according yaml standards.
+#
+mod_evasive:
+  enable: true
+  settings:
+    - name: DOSHashTableSize
+      value: 6145
+    - name: DOSPageCount
+      value: 15
+    - name: DOSSiteCount
+      value: 150
+    - name: DOSPageInterval
+      value: 1
+    - name: DOSSiteInterval
+      value: 1
+    - name: DOSBlockingPeriod
+      value: 10
+    - name: DOSEmailNotify
+      value: "root@localhost"
+    - name: DOSSystemCommand
+      value: "\"su - root -c 'ufw deny from %s to any'\""
+    - name: DOSLogDir
+      value: "/var/log/mod_evasive"
+    - name: DOSWhitelist
+      value: "127.0.0.1"
+mod_security2:
+  enable: true
+  scan_uploaded_files: true
+  settings:
+    - name: SecRuleEngine
+      value: "On"
+    - name: SecRequestBodyAccess
+      value: "On"
+    - name: SecRequestBodyLimit
+      value: 13107200
+    - name: SecRequestBodyNoFilesLimit
+      value: 131072
+    - name: SecRequestBodyInMemoryLimit
+      value: 4194304
+    - name: SecResponseBodyLimit
+      value: 12582912
+    - name: SecPcreMatchLimit
+      value: 250000
+    - name: SecPcreMatchLimitRecursion
+      value: 250000
+    - name: SecCollectionTimeout
+      value: 600
+    - name: SecUploadDir
+      value: "/tmp"
+    - name: SecTmpDir
+      value: "/tmp"
+    - name: SecDataDir
+      value: "/tmp" # alternatively use /var/cache/modsecurity
+    - name: SecTmpSaveUploadedFiles
+      value: "On" # if you want to scan uploaded files this needs to be switched on
+    - name: 'SecRule REMOTE_ADDR "@ipMatch 127.0.0.1,::1"'
+      value: '"phase:2,pass,nolog,allow,ctl:ruleEngine=Off,id:''299998''"' # do not filter local traffic

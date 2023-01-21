@@ -1,0 +1,18 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ logrotate_packages|default([]) }}"
+        package_status: "{{ true }}"
+
+- name: Create logrotate config file
+  template:
+    src: templates/logrotate.j2
+    dest: "{{ etc_path }}logrotate.d/froxlor"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644

@@ -1,0 +1,14 @@
+---
+# Mail packages for Debian
+postfix_packages:
+  - postfix
+  - postfix-mysql
+
+dovecot_packages:
+  - dovecot-imapd
+  - dovecot-pop3d
+  - dovecot-mysql
+  - dovecot-managesieved
+  - dovecot-sieve
+
+postfix_debconf_main_mailer_type: "Internet Site"

@@ -1,0 +1,10 @@
+---
+# Mail packages for RedHat
+postfix_packages:
+  - postfix
+  - postfix-mysql
+
+dovecot_packages:
+  - dovecot
+  - dovecot-mysql
+  - dovecot-pigeonhole

@@ -1,0 +1,25 @@
+---
+# Install or remove binary software via package manager
+- apt:
+    name: "{{item.package_list|default([]) }}"
+    state: "{{ item.package_status | ternary('latest','absent')}}"
+    install_recommends: no
+  when: ansible_os_family == "Debian"
+  loop: "{{ packages }}"
+
+- dnf:
+    name: "{{item.package_list|default([]) }}"
+    state: "{{ item.package_status | ternary('latest','absent')}}"
+    install_weak_deps: no
+  when: ansible_os_family == "RedHat"
+  loop: "{{ packages }}"
+
+- command: "pkg {{ item.package_status | ternary('install','remove')}} -y {{ item.package_list | join(' ') }}"
+  when: (ansible_os_family == 'FreeBSD') and (ansible_version.full is version('2.9', '<='))
+  loop: "{{ packages }}"
+
+- community.general.pkgng:
+    name: "{{item.package_list|default([]) }}"
+    state: "{{ item.package_status | ternary('latest','absent')}}"
+  when: (ansible_os_family == 'FreeBSD') and (ansible_version.full is version('2.10', '>='))
+  loop: "{{ packages }}"

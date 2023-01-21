@@ -1,0 +1,77 @@
+---
+# Execute tasks for Debian
+
+- name: Ensure group 'vmail' exists with correct gid
+  group:
+    name: vmail
+    state: present
+    gid: 2000
+
+- name: Add the user 'vmail' with a specific uid and a primary group of 'vmail'
+  user:
+    name: vmail
+    uid: 2000
+    create_home: no
+    group: vmail
+
+# Create postfix config and socket directories
+- name: Create directory to run postfix
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0640
+  loop:
+    - "/var/spool/postfix/etc/pam.d"
+    - "/var/spool/postfix/var/run/mysqld"
+  notify: restart postfix
+
+# Create mail directory for customers mails
+- name: Create customer mail directory
+  file:
+    path: "/var/customers/mail/"
+    state: directory
+    owner: vmail
+    group: vmail
+    mode: 0750
+  notify: restart postfix
+
+# Create main config file for postfix
+- name: Create main.cf for postfix
+  template:
+    src: templates/postfix/main.cf.j2
+    dest: "{{ etc_path }}postfix/main.cf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart postfix
+
+# Create main config file for postfix
+- name: Create mysql extension config files for postfix
+  template:
+    src: "{{ item }}"
+    dest: "{{ etc_path }}postfix/"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0640
+  loop: "{{ query('fileglob', 'templates/postfix/mysql-*') }}"
+  notify: restart postfix
+
+# Create master config file for postfix
+- name: Create master.cf for postfix
+  copy:
+    src: templates/postfix/master.cf.j2
+    dest: "{{ etc_path }}postfix/master.cf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart postfix
+
+# Create and populate new aliases
+- name: Create new aliases
+  template:
+    src: templates/postfix/aliases.j2
+    dest: "{{ etc_path }}aliases"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: newaliases

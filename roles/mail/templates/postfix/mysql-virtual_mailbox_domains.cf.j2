@@ -1,0 +1,5 @@
+user = {{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.froxlor.cnf') }}
+password = {{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.froxlor.cnf') }}
+dbname = {{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.froxlor.cnf') }}
+hosts = localhost
+query = SELECT domain FROM panel_domains WHERE domain = '%s' AND isemaildomain = '1'

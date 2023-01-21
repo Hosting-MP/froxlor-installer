@@ -1,0 +1,4 @@
+---
+# Firewall packages for Debian
+firewall_packages:
+  - ufw

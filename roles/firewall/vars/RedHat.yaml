@@ -1,0 +1,4 @@
+---
+# Firewall packages for RedHat
+firewall_packages:
+  - firewalld

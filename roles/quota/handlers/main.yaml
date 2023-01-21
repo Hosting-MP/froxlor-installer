@@ -1,0 +1,7 @@
+---
+# handlers file for froxlorInstaller
+- name: restart quota
+  service:
+    name: quota
+    state: restarted
+    enabled: yes

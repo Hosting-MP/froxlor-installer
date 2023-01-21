@@ -1,0 +1,12 @@
+---
+# handlers file for froxlorInstaller
+- name: restart proftpd
+  service:
+    name: proftpd
+    state: restarted
+    enabled: yes
+- name: restart pureftpd
+  service:
+    name: pure-ftpd
+    state: restarted
+    enabled: yes

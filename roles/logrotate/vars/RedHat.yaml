@@ -1,0 +1,4 @@
+---
+# Logrotate packages for RedHat
+logrotate_packages:
+  - logrotate

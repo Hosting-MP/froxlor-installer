@@ -1,0 +1,102 @@
+---
+#
+# Configure rkhunter
+#
+
+# Update the path for egrep as this is common to be set wrongly by default
+- name: Update rkhunter egrep
+  command: "which egrep"
+  register: egrep_path
+
+# Update the path for fgrep as this is common to be set wrongly by default
+- name: Update rkhunter fgrep
+  command: "which fgrep"
+  register: fgrep_path
+
+# Update the path for which as this is common to be set wrongly by default
+- name: Update rkhunter which
+  command: "which which"
+  register: which_path
+
+# Update the path for ldd as this is common to be set wrongly by default
+- name: Update rkhunter ldd
+  command: "which ldd"
+  register: ldd_path
+
+# Update the path for adduser as this is common to be set wrongly by default
+- name: Update rkhunter adduser
+  command: "which adduser"
+  register: adduser_path
+
+# Update the path for whatis as this is common to be set wrongly by default
+- name: Update rkhunter whatis
+  command: "which whatis"
+  register: whatis_path
+  when: ansible_system == 'FreeBSD'
+
+# Check if temp, database and script dir exists and create if not
+- name: Create temp and database and script log dir
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    mode: "{{ '0750' if ansible_system == 'FreeBSD' else '0755' }}"
+  when: ('TMPDIR' in item.name) or ('DBDIR' in item.name) or ('SCRIPTDIR' in item.name)
+  loop: "{{ rkhunter.settings }}"
+
+# Create rkhunter config file
+- name: Create rkhunter config file
+  template:
+    src: templates/rkhunter.conf.j2
+    dest: "{{ etc_path }}rkhunter.conf"
+
+# Create rkhunter cron file
+- name: Create rkhunter cron file
+  template:
+    src: templates/rkhunter.cron.j2
+    dest: "{{ etc_path }}default/rkhunter"
+  when: ansible_system == 'Linux'
+
+- name: Insert rkhunter into periodic schedule
+  blockinfile:
+    path: /etc/periodic.conf
+    block: |
+      daily_rkhunter_update_enable="YES"
+      daily_rkhunter_update_flags="--update --nocolors"
+    create: yes
+  when: ansible_system == 'FreeBSD' and rkhunter.autoDatabaseUpdates
+
+- name: Insert rkhunter auto update into periodic schedule
+  blockinfile:
+    path: /etc/periodic.conf
+    block: |
+      daily_rkhunter_check_enable="YES"
+      daily_rkhunter_check_flags="--checkall --nocolors --skip-keypress"
+    create: yes
+  when: ansible_system == 'FreeBSD' and rkhunter.runDaily
+
+# Check for db updates
+- name: Update rkhunter
+  command: "rkhunter --update"
+  register: rkhunter_update
+  failed_when: rkhunter_update.rc == 1
+  changed_when: rkhunter_update.rc == 2
+
+# Check for app updates
+- name: Check for updates for rkhunter
+  command: "rkhunter --versioncheck"
+
+# run initial scan to set system integrity and genuity
+- name: Mark system as clean for rkhunter
+  command: "rkhunter --propupd"
+  register: rkhunter_propupd
+  ignore_errors: yes
+  when: rkhunter.propupd|default(false)
+  failed_when: ('failed' in rkhunter_propupd.stdout)
+  changed_when: ('File created' in rkhunter_propupd.stdout) or ('File updated' in rkhunter_propupd.stdout)
+
+- name: Set system as scanned to not scan again everytime ansible runs
+  lineinfile:
+    path: "{{ etc_path }}froxlor/security.yaml"
+    regexp: '^\s*#?\s*\bpropupd\b'
+    line: "  propupd: false"
+  when: rkhunter_propupd.changed

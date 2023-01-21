@@ -1,0 +1,11 @@
+---
+# System packages for FreeBSD
+system_packages:
+  - bzip2
+  - curl
+  - git
+  - gmake
+  - gtar
+  - unzip
+  - wget
+  - zip

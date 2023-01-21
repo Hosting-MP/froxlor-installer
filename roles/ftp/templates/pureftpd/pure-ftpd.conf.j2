@@ -1,0 +1,38 @@
+ChrootEveryone               yes
+BrokenClientsCompatibility   no
+MaxClientsNumber             30
+Daemonize                    yes
+MaxClientsPerIP              3
+VerboseLog                   no
+DisplayDotFiles              yes
+AnonymousOnly                no
+NoAnonymous                  no
+SyslogFacility               ftp
+DontResolve                  yes
+MaxIdleTime                  15
+{% if ansible_os_family == 'Debian' %}
+MySQLConfigFile              {{ etc_path }}pure-ftpd/db/mysql.conf
+{% elif ansible_os_family == 'RedHat' %}
+MySQLConfigFile              {{ etc_path }}pure-ftpd/pureftpd-mysql.conf
+{% elif ansible_os_family == 'FreeBSD' %}
+MySQLConfigFile              {{ etc_path }}pureftpd-mysql.conf
+{% endif %}
+LimitRecursion               10000 8
+AnonymousCanCreateDirs       no
+MaxLoad                      4
+AntiWarez                    yes
+Umask                        022:022
+MinUID                       1000
+AllowUserFXP                 no
+AllowAnonymousFXP            no
+ProhibitDotFilesWrite        no
+ProhibitDotFilesRead         no
+AutoRename                   no
+AnonymousCantUpload          yes
+MaxDiskUsage                 99
+CustomerProof                yes
+{% if froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled and vhost_ssl_key.stat.exists and vhost_ssl_crt.stat.exists %}
+TLS                          1
+TLSCipherSuite               HIGH
+CertFileAndKey               {{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.crt {{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key
+{% endif %}

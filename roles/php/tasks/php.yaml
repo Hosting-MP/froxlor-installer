@@ -1,0 +1,77 @@
+---
+# Install php on Debian systems
+
+# Determine the PHP version installed
+- name: Get PHP version
+  shell: 'php -v | perl -ne "print if /(PHP )\d+\.\d+\.\d+/" | cut -c 5-7'
+  register: cmd_php_version
+
+- name: Announce system-version of PHP
+  set_fact:
+    php_version: "{{ cmd_php_version.stdout }}"
+
+# Determine file path to PHP configuration
+- name: Get PHP config file
+  shell: php -i | grep 'Configuration File (php.ini)' | awk -F '=> ' '{print $2}'
+  register: php_ini_path
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'FreeBSD'
+
+- name: Check if php.ini exists
+  stat:
+    path: "{{ php_ini_path.stdout }}/php.ini"
+  register: php_ini_file
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'FreeBSD'
+
+- name: Copy php.ini from production template
+  copy:
+    src: "{{ php_ini_path.stdout }}/php.ini-production"
+    dest: "{{ php_ini_path.stdout }}/php.ini"
+    remote_src: yes
+  when: (ansible_os_family == 'RedHat' or ansible_os_family == 'FreeBSD') and not php_ini_file.stat.exists
+  notify: restart php-fpm
+
+- name: Make php-fpm listen on unix socket
+  lineinfile:
+    path: "{{ etc_path }}{{ 'php-fpm.d/www.conf' if (ansible_os_family == 'FreeBSD' or ansible_os_family == 'RedHat') else 'php/' + php_version + '/fpm/pool.d/www.conf' }}"
+    regexp: '^\s*#*\s*(?:listen = )'
+    line: "listen = /var/run/php{{ php_version }}-fpm.sock"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart php-fpm
+
+# This is to fix: https://bugs.php.net/bug.php?id=67244 Linux figured out their own way to manage in packages.
+- name: Make php-fpm listen to webserver user
+  lineinfile:
+    path: "{{ etc_path }}{{ 'php-fpm.d/www.conf' if (ansible_os_family == 'FreeBSD' or ansible_os_family == 'RedHat') else 'php/' + php_version + '/fpm/pool.d/www.conf' }}"
+    regexp: '^\s*#*\s*(?:listen\.owner = )'
+    line: "listen.owner = www"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  when: ansible_system == 'FreeBSD'
+  notify: restart php-fpm
+
+# This is to fix: https://bugs.php.net/bug.php?id=67244 Linux figured out their own way to manage in packages.
+- name: Make php-fpm listen to webserver user
+  lineinfile:
+    path: "{{ etc_path }}{{ 'php-fpm.d/www.conf' if (ansible_os_family == 'FreeBSD' or ansible_os_family == 'RedHat') else 'php/' + php_version + '/fpm/pool.d/www.conf' }}"
+    regexp: '^\s*#*\s*(?:listen\.group = )'
+    line: "listen.group = www"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  when: ansible_system == 'FreeBSD'
+  notify: restart php-fpm
+
+# The default socket is not available on FreeBSD binaries.
+- name: Make php-fpm listen to default mysql socket
+  lineinfile:
+    path: "{{ php_ini_path.stdout }}/php.ini"
+    search_string: 'pdo_mysql.default_socket='
+    line: "pdo_mysql.default_socket={{ '/tmp/mysql.sock' if (ansible_os_family == 'FreeBSD') else '/var/run/mysql/mysql.sock' }}"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  when: ansible_system == 'FreeBSD'
+  notify: restart php-fpm

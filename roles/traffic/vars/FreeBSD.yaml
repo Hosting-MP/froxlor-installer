@@ -1,0 +1,11 @@
+---
+# Awstats packages for FreeBSD
+awstats_packages:
+  - awstats
+  - p5-Net-IP
+  - p5-Net-DNS
+webalizer_packages:
+  - webalizer
+goaccess_packages:
+  - goaccess
+  - jq

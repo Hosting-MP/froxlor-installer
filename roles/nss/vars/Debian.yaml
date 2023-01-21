@@ -1,0 +1,4 @@
+---
+# Nss packages for Debian
+nss_packages:
+  - libnss-extrausers

@@ -1,0 +1,15 @@
+{% if froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled and vhost_ssl_key.stat.exists and vhost_ssl_crt.stat.exists and vhost_ssl_ca.stat.exists and vhost_ssl_chain.stat.exists %}
+ssl = yes
+ssl_cipher_list = ALL:!DH:!kRSA:!SRP:!kDHd:!DSS:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK:!RC4:!ADH:!LOW@STRENGTH
+ssl_min_protocol = TLSv1.2
+{% if ansible_os_family == 'Debian' %}
+ssl_client_ca_dir = /etc/ssl/certs
+{% elif ansible_os_family == 'RedHat' %}
+ssl_client_ca_dir = /etc/pki/tls/cert.pem
+{% elif ansible_os_family == 'FreeBSD' %}
+ssl_client_ca_dir = /usr/local/etc/ssl/cert.pem
+{% endif %}
+ssl_cert = <{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.crt
+ssl_key = <{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key
+ssl_dh = <{{ etc_path }}ssl/dhparam.pem
+{% endif %}

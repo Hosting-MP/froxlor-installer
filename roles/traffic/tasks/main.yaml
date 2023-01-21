@@ -1,0 +1,19 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ awstats_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.traffictool == 'awstats') | default (false) }}"
+      - package_list: "{{ webalizer_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.traffictool == 'webalizer') | default (false) }}"
+      - package_list: "{{ goaccess_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.traffictool == 'goaccess') | default (false) }}"
+
+# Add DNS setup instructions
+- name: Run tasks to setup the dns server
+  include_tasks: "{{ froxlor_settings.traffictool }}.yaml"
+  when: (froxlor_settings.traffictool == 'awstats')

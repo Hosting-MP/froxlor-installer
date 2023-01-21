@@ -1,0 +1,220 @@
+---
+# Execute tasks for Debian
+
+############################################
+# CURRENTLY NOT USED but keeping as backup #
+############################################
+
+#
+# Allow already running connections
+#
+- name: Allow related and established connections (IPv4)
+  iptables:
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    ip_version: ipv4
+- name: Allow related and established connections (IPv6)
+  iptables:
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+- name: Allow related and established connections (IPv4)
+  iptables:
+    chain: FORWARD
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    ip_version: ipv4
+- name: Allow related and established connections (IPv6)
+  iptables:
+    chain: FORWARD
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+#
+# Allow ping request
+#
+- name: Allow icmp (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: icmp
+    jump: ACCEPT
+    ip_version: ipv4
+- name: Allow icmp (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: icmp
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+#
+# Allow ports for configured services
+#
+- name: Allow connections on multiple ports (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports:
+      - "21"
+      - "22"
+      - "80"
+      - "443"
+      - "25"
+      - "110"
+      - "143"
+      - "465"
+      - "587"
+      - "993"
+      - "995"
+    jump: ACCEPT
+    ip_version: ipv4
+- name: Allow connections on multiple ports (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports:
+      - "21"
+      - "22"
+      - "80"
+      - "443"
+      - "25"
+      - "110"
+      - "143"
+      - "465"
+      - "587"
+      - "993"
+      - "995"
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+#
+# Enable DNS port if DNS is configured in Froxlor
+#
+- name: Allow TCP connections for DNS queries (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports: 53
+    jump: ACCEPT
+    ip_version: ipv4
+  when: froxlor_settings.dnsenabled
+- name: Allow TCP connections for DNS queries (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports: 53
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined and froxlor_settings.dnsenabled
+
+- name: Allow UDP connections for DNS queries (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_ports: 53
+    jump: ACCEPT
+    ip_version: ipv4
+  when: froxlor_settings.dnsenabled
+- name: Allow UDP connections for DNS queries (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_ports: 53
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined and froxlor_settings.dnsenabled
+
+#
+# Enable NTP port if DNS is configured in Froxlor
+#
+- name: Check if ntp is enabled
+  command:
+    cmd: "timedatectl status | grep NTP"
+  register: ntp_enabled
+
+- name: Allow TCP connections for NTP queries (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports: 123
+    jump: ACCEPT
+    ip_version: ipv4
+  when: '"active" in ntp_enabledl.stdout
+- name: Allow TCP connections for NTP queries (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_ports: 123
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined and "active" in ntp_enabledl.stdout
+
+- name: Allow UDP connections for NTP queries (IPv4)
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_ports: 123
+    jump: ACCEPT
+    ip_version: ipv4
+  when: '"active" in ntp_enabledl.stdout
+- name: Allow UDP connections for NTP queries (IPv6)
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_ports: 123
+    jump: ACCEPT
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined and "active" in ntp_enabledl.stdout
+
+#
+# Block all other traffic
+#
+- name: Set the policy for the INPUT chain to DROP (IPv4)
+  iptables:
+    chain: INPUT
+    policy: DROP
+    ip_version: ipv4
+- name: Set the policy for the INPUT chain to DROP (IPv6)
+  iptables:
+    chain: INPUT
+    policy: DROP
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+#
+# Prevent invalid packets from going out of the machine
+#
+- name: DROP invalid outgoing packages (IPv4)
+  iptables:
+    chain: OUTPUT
+    policy: DROP
+    ctstate: INVALID
+    ip_version: ipv4
+- name: DROP invalid outgoing packages (IPv6)
+  iptables:
+    chain: OUTPUT
+    policy: DROP
+    ctstate: INVALID
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined
+
+- name: DROP invalid forwarded packages (IPv4)
+  iptables:
+    chain: FORWARD
+    policy: DROP
+    ctstate: INVALID
+    ip_version: ipv4
+- name: DROP invalid forwarded packages (IPv6)
+  iptables:
+    chain: FORWARD
+    policy: DROP
+    ctstate: INVALID
+    ip_version: ipv6
+  when: ansible_default_ipv6 is defined

@@ -1,0 +1,10 @@
+---
+# handlers file for froxlorInstaller
+- name: restart cron
+  service:
+    name: "{{ 'cron' if 'Debian' in ansible_os_family else 'crond' }}"
+    state: restarted
+    enabled: yes
+- name: update dnf cache
+  dnf:
+    update_cache: yes

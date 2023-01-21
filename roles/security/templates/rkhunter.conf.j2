@@ -1,0 +1,15 @@
+{% if rkhunter is defined %}
+{% if rkhunter.settings is defined %}
+{% for setting in rkhunter.settings %}
+{{ setting.name }}={{ setting.value }}
+{% endfor %}
+SCRIPTWHITELIST={{ egrep_path.stdout }}
+SCRIPTWHITELIST={{ fgrep_path.stdout }}
+SCRIPTWHITELIST={{ which_path.stdout }}
+SCRIPTWHITELIST={{ ldd_path.stdout }}
+SCRIPTWHITELIST={{ adduser_path.stdout }}
+{% if ansible_system == 'FreeBSD' %}
+SCRIPTWHITELIST={{ whatis_path.stdout }}
+{% endif %}
+{% endif %}
+{% endif %}

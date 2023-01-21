@@ -1,0 +1,12 @@
+---
+# System packages for RedHat
+system_packages:
+  - bzip2
+  - curl
+  - git
+  - httpd-tools
+  - tar
+  - unzip
+  - wget
+  - yum-utils
+  - zip

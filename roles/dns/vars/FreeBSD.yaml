@@ -1,0 +1,6 @@
+---
+# DNS packages for FreeBSD
+bind_packages:
+  - bind918
+powerdns_packages:
+  - powerdns

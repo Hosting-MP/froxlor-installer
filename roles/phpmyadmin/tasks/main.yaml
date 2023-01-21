@@ -1,0 +1,30 @@
+---
+# tasks file for froxlorInstaller
+
+# save bandwidth and check if phpMyAdmin directory exists to not download again
+- name: Check if phpMyAdmin exists
+  stat:
+    path: "{{ www_path }}/{{ froxlor_settings.phpmyadmin_url | basename }}"
+  register: phpmyadmin_dir
+  when: froxlor_settings.phpmyadmin_url|basename and froxlor_settings.phpmyadmin_url|length > 0
+
+- name: "{{ (froxlor_settings.phpmyadmin_url|length > 0) | ternary('Create', 'Remove') }} phpmyadmin directory"
+  file:
+    path: "{{ www_path }}/{{ froxlor_settings.phpmyadmin_url | basename }}"
+    state: directory
+    mode: 0755
+    owner: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+    group: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+  when: phpmyadmin_dir.stat is defined
+
+# Download the ioncubeloader files from web and extract the required version
+- name: Copy phpMyAdmin files from web
+  unarchive:
+    remote_src: yes
+    src: "https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.tar.gz"
+    dest: "{{ www_path }}/{{ froxlor_settings.phpmyadmin_url | basename }}"
+    extra_opts: [--strip-components=1]
+    mode: 0755
+    owner: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+    group: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+  when: phpmyadmin_dir.stat is defined and not phpmyadmin_dir.stat.exists

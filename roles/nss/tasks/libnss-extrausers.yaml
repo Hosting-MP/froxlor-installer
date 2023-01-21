@@ -1,0 +1,28 @@
+---
+# tasks file for froxlorInstaller
+
+- name: Create a directory if it does not exist
+  file:
+    path: /var/lib/extrausers
+    state: directory
+    mode: 0755
+
+- name: Create permissions files for extrausers
+  file:
+    path: "/var/lib/extrausers/{{ item }}"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    state: touch
+    mode: 0644
+  loop:
+    - "passwd"
+    - "group"
+    - "shadow"
+
+- name: Copy extrausers config
+  copy:
+    src: files/nsswitch-extrausers.conf
+    dest: "{{ etc_path }}nsswitch.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644

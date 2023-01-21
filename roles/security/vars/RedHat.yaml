@@ -1,0 +1,7 @@
+---
+# Security packages for RedHat
+clamav_packages:
+  - clamav
+  - clamav-update
+rkhunter_packages:
+  - rkhunter

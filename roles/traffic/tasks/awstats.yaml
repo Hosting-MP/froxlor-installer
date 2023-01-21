@@ -1,0 +1,23 @@
+---
+# Execute tasks for Awstats
+
+- name: Create awstats folder
+  file:
+    path: "{{ etc_path }}awstats/"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0755
+    state: directory
+
+- name: Create awstats config file
+  template:
+    src: templates/awstats.model.conf.j2
+    dest: "{{ ('FreeBSD' in ansible_system) | ternary('/usr/local/www/awstats/cgi-bin/awstats.model.conf', etc_path + 'awstats/awstats.model.conf') }}"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+
+- name: Remove awstats cronjob
+  file:
+    path: /etc/cron.d/awstats # this is in /etc for FreeBSD too
+    state: absent

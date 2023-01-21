@@ -1,0 +1,11 @@
+MYSQLServer     127.0.0.1
+MYSQLPort       3306
+MYSQLUser       {{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.froxlor.cnf') }}
+MYSQLPassword   {{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.froxlor.cnf') }}
+MYSQLDatabase   {{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.froxlor.cnf') }}
+MYSQLCrypt      any
+MYSQLGetPW      SELECT password FROM ftp_users WHERE username="\L" AND login_enabled="y"
+MYSQLGetUID     SELECT uid FROM ftp_users WHERE username="\L" AND login_enabled="y"
+MYSQLGetGID     SELECT gid FROM ftp_users WHERE username="\L" AND login_enabled="y"
+MYSQLGetDir     SELECT homedir FROM ftp_users WHERE username="\L" AND login_enabled="y"
+MySQLGetQTASZ   SELECT CASE WHEN panel_customers.diskspace = 0 THEN -1 WHEN panel_customers.diskspace <= -1 THEN 0 ELSE panel_customers.diskspace/1024 END AS QuotaSize FROM panel_customers, ftp_users WHERE username = "\L" AND panel_customers.loginname = SUBSTRING_INDEX('\L', 'ftp', 1)

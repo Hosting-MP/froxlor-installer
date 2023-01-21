@@ -1,0 +1,4 @@
+---
+# Logrotate packages for FreeBSD
+logrotate_packages:
+  - logrotate

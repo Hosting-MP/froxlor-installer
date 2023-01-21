@@ -1,0 +1,26 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ quota_packages|default([]) }}"
+        package_status: "{{ froxlor_settings.diskquota_enabled | default (false) }}"
+
+- name: Disable checkquota on every reboot
+  lineinfile:
+    path: /etc/rc.conf
+    search_string: 'check_quotas='
+    line: 'check_quotas="NO"'
+    owner: root
+    group: wheel
+    mode: 0644
+    state: "{{ froxlor_settings.diskquota_enabled | ternary('present', 'absent') }}"
+  when: "'FreeBSD' in ansible_system"
+
+# Add quota setup instructions
+- name: Run tasks to setup quota
+  include_tasks: "{{ ansible_system }}.yaml"
+  when: froxlor_settings.diskquota_enabled

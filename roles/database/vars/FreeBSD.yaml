@@ -1,0 +1,4 @@
+---
+# System packages for FreeBSD
+database_packages:
+  - "{{ database.engine }}-server"

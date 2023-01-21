@@ -1,0 +1,14 @@
+---
+# handlers file for froxlorInstaller
+
+- name: restart bind
+  service:
+    name: "{{ 'named' if ((ansible_os_family == 'RedHat') or (ansible_os_family == 'FreeBSD')) else 'bind9' }}"
+    state: restarted
+    enabled: yes
+
+- name: restart powerdns
+  service:
+    name: pdns
+    state: restarted
+    enabled: yes

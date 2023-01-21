@@ -1,0 +1,15 @@
+# Encrypt connections (http://www.proftpd.org/docs/contrib/mod_tls.html)
+{% if froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled and vhost_ssl_key.stat.exists and vhost_ssl_crt.stat.exists and vhost_ssl_ca.stat.exists and vhost_ssl_chain.stat.exists %}
+<IfModule mod_tls.c>
+TLSEngine					on
+TLSLog						/var/log/proftpd/tls.log
+TLSProtocol					{{ froxlor_settings.ssl_protocols|default('TLSv1.2,TLSv1.3') | split(',') | join(' ') }}
+TLSDHParamFile				{{ etc_path }}ssl/dhparam.pem
+TLSRSACertificateFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.crt
+TLSRSACertificateKeyFile	{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key
+TLSCACertificateFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_CA.pem
+TLSCertificateChainFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_chain.pem
+TLSOptions					NoCertRequest NoSessionReuseRequired
+TLSVerifyClient				off
+</IfModule>
+{% endif %}

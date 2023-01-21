@@ -1,0 +1,46 @@
+---
+#
+# This value sets the installed default php version.
+# The value "php" refers to the latest available stable version.
+# If you want to install another version like from https://launchpad.net/~ondrej/+archive/ubuntu/php
+# you have to add the repository first as described in that projects introduction.
+# Then you can set a specific php version e.g. "php7.4".
+# If you are looking to install additional versions (multiPHP), this has to be done manually.
+#
+# When removing an extension you need to manually remove it from your system too.
+# apt-get remove php-<extension>
+#
+php:
+  version: php8.2
+  install_ioncube_loaders: true
+  extensions:
+  - fpm # this is a required extension DO NOT DELETE
+  - common
+  - curl
+  - apcu
+  - bcmath
+#  - dom
+#  - fileinfo
+  - gd
+  - gmp
+  - gnupg
+  - imagick
+  - imap
+#  - json
+  - mailparse
+  - mbstring
+  - mysql
+#  - pdo
+#  - pdo-mysql
+#  - pdo-sqlite
+  - pspell
+#  - phar
+#  - posix
+#  - pear
+  - tidy
+  - yaml
+  - zip
+  - intl
+  - xml
+#  - xmlrpc
+#  - xsl

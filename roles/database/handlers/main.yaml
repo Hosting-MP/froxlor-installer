@@ -1,0 +1,7 @@
+---
+# handlers file for froxlorInstaller
+- name: restart mysql
+  service:
+    name: "{{ 'mysql-server' if ansible_system == 'FreeBSD' else database.engine }}"
+    state: restarted
+    enabled: yes

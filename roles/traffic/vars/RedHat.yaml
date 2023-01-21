@@ -1,0 +1,11 @@
+---
+# Awstats packages for RedHat
+awstats_packages:
+  - awstats
+  - perl-Net-IP
+  - perl-Net-DNS
+webalizer_packages:
+  - webalizer
+goaccess_packages:
+  - goaccess
+  - jq

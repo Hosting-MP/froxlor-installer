@@ -1,0 +1,29 @@
+---
+# tasks file for froxlorInstaller
+
+- name: Create libnss-mysql config file
+  template:
+    src: templates/libnss-mysql.cfg.j2
+    dest: "{{ etc_path }}libnss-mysql.cfg"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0600
+
+- name: Create libnss-mysql-root config file
+  template:
+    src: templates/libnss-mysql-root.cfg.j2
+    dest: "{{ etc_path }}libnss-mysql-root.cfg"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0600
+
+- name: Copy nsswitch config
+  template:
+    src: files/nsswitch-mysql.conf
+    dest: "/etc/nsswitch.conf" # this is in /etc for FreeBSD too
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify:
+    - restart nscd
+    - invalidate nscd groups

@@ -1,0 +1,38 @@
+{% if ansible_os_family == 'Debian' %}
+# This is the directory where DSO modules reside
+ModulePath /usr/lib/proftpd
+
+{% endif %}
+ModuleControlsACLs insmod,rmmod allow user root
+ModuleControlsACLs lsmod allow user *
+
+LoadModule mod_sql.c
+{% if froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled %}
+LoadModule mod_tls.c
+{% endif %}
+LoadModule mod_sql_mysql.c
+LoadModule mod_ban.c
+LoadModule mod_copy.c
+LoadModule mod_ctrls_admin.c
+LoadModule mod_deflate.c
+{% if ansible_os_family == 'Debian' %}
+LoadModule mod_dynmasq.c
+{% endif %}
+LoadModule mod_exec.c
+LoadModule mod_facl.c
+LoadModule mod_ifsession.c
+LoadModule mod_ifversion.c
+LoadModule mod_load.c
+LoadModule mod_quotatab.c
+LoadModule mod_quotatab_file.c
+LoadModule mod_quotatab_sql.c
+LoadModule mod_ratio.c
+LoadModule mod_rewrite.c
+LoadModule mod_shaper.c
+LoadModule mod_site_misc.c
+LoadModule mod_unique_id.c
+{% if ansible_os_family == 'Debian' %}
+LoadModule mod_wrap.c
+{% endif %}
+LoadModule mod_wrap2.c
+LoadModule mod_wrap2_file.c

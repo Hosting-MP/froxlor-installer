@@ -1,0 +1,92 @@
+---
+#
+# Global default settings which might be hardcoded in other roles
+#
+- name: Set global config dir
+  set_fact:
+    etc_path: "{{ '/usr/local/etc/' if ansible_system == 'FreeBSD' else '/etc/' }}"
+
+- name: Set global html dir
+  set_fact:
+    www_path: '/var/www/html/'
+
+#
+# Froxlor config files for /etc/
+#
+- name: Create froxlor config directory
+  file:
+    path: "{{ etc_path }}froxlor/"
+    state: directory
+
+# Get configuration from user space
+- name: Copy premade config files to user space
+  copy:
+    src: "files/{{ ansible_os_family }}.config.yaml"
+    dest: "{{ etc_path }}froxlor/config.yaml"
+    force: no
+  register: froxlor_config_file
+
+# Load config file found in user space
+- name: Load config file from user space
+  include_vars: "{{ etc_path }}froxlor/config.yaml"
+
+#
+# Froxlor configuration from web-database
+#
+# Get all config variables from SQL setings table
+- name: Execute query to get config variables
+  community.mysql.mysql_query:
+    config_file: "~/.froxlor.cnf"
+    query: SELECT varname FROM panel_settings WHERE NOT varname='default' AND NOT varname='enabled'
+  ignore_errors: yes
+  register: froxlor_settings_vars_raw
+
+- name: Retrieve froxlor settings from MySQL table
+  block:
+    # Make a list of dicts from the returned list of lists of dicts
+    - name: Conversion of config variables
+      set_fact:
+        froxlor_settings_vars: "{{ froxlor_settings_vars_raw.query_result | flatten }}"
+
+    # Generate query strings that return the value for the settings variable
+    - name: Generate queries to retrieve configs keys
+      set_fact:
+        query_list: '{{ query_list | default([]) + [ "SELECT value AS " + item.varname + " FROM panel_settings WHERE varname=''" + item.varname + "''" ] }}'
+      loop: "{{ froxlor_settings_vars | default([]) }}"
+
+    # Execute the previously generated queries
+    - name: Execute queries to retrieve config values
+      community.mysql.mysql_query:
+        config_file: "~/.froxlor.cnf"
+        query: "{{ query_list }}"
+        single_transaction: yes
+      register: query_froxlor_settings
+
+    # Merge the query result to get one dict of the list of dicts
+    - name: Iterim reformatting and saving
+      set_fact:
+        froxlor_settings: "{{ froxlor_settings|default([]) | combine(item) }}"
+      loop: "{{ query_froxlor_settings.query_result | default([]) | flatten(levels=1) }}"
+
+    # Reformat the values containing one and zero as string to booleans
+    - name: Make vars booleans
+      set_fact:
+        froxlor_settings: "{{ froxlor_settings|default([]) | combine(replace_item, recursive=true) }}"
+      vars:
+        replace_item: "{ '{{ item.key }}': {{ (item.value == '1') | ternary('true', 'false') | default('false') | bool }} }"
+      when: item.value == '1' or item.value == '0'
+      loop: "{{ froxlor_settings | dict2items }}"
+
+    # Get all unique IP addresses from SQL ipsandports table
+    - name: Execute query to get IPs
+      community.mysql.mysql_query:
+        config_file: "~/.froxlor.cnf"
+        query: SELECT DISTINCT ip FROM panel_ipsandports
+      register: froxlor_ip_dict
+
+    # Merge the query result to get one dict of the list of dicts
+    - name: Make IP addresses dict values to list
+      set_fact:
+        froxlor_ip_list: "{{ froxlor_ip_list|default([]) + [item.ip] }}"
+      loop: "{{ froxlor_ip_dict.query_result | default([]) | flatten }}"
+  when: not froxlor_settings_vars_raw.failed

@@ -1,0 +1,10 @@
+---
+- name: running on localhost only
+  hosts: localhost
+  connection: local
+  roles:
+    - system
+    - php
+    - webserver
+    - database
+    - froxlor

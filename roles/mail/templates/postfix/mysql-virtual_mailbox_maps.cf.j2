@@ -1,0 +1,6 @@
+user = {{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.froxlor.cnf') }}
+password = {{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.froxlor.cnf') }}
+dbname = {{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.froxlor.cnf') }}
+expansion_limit = 1
+hosts = localhost
+query = SELECT CONCAT(homedir,maildir) FROM mail_users WHERE email = '%s'

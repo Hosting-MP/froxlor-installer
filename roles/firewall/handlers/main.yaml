@@ -1,0 +1,17 @@
+---
+# handlers file for froxlorInstaller
+- name: start ufw
+  service:
+    name: ufw
+    state: started
+    enabled: yes
+- name: start firewalld
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+- name: restart ipfw
+  service:
+    name: ipfw
+    state: restarted
+    enabled: yes

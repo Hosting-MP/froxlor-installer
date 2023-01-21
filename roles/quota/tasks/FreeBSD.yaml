@@ -1,0 +1,118 @@
+---
+# tasks file for froxlorInstaller
+
+#
+# Setup Quotas
+#
+- name: Check for file system quota file
+  stat:
+    path: "{{ item.mount }}"
+  register: quota_file
+  when: ('usrquota' in item.options and 'grpquota' in item.options and froxlor_settings.diskquota_customer_partition in item.mount)
+  loop: "{{ ansible_mounts | flatten(levels=1) }}"
+
+- name: Enable quota
+  block:
+    - name: Check if the user quota file exists
+      stat:
+        path: "{{ quota_file.results[0].stat.path | default('') }}/quota.user"
+      register: usrquota_file
+
+    - name: Check if the group quota file exists
+      stat:
+        path: "{{ quota_file.results[0].stat.path | default('') }}/quota.group"
+      register: grpquota_file
+
+    - name: Generate quota files for flagged partition
+      command: "quotacheck -cgum {{ item.stat.path }}"
+      when: not usrquota_file.stat.exists and not grpquota_file.stat.exists
+      loop: "{{ quota_file.results | flatten(levels=1) }}"
+      notify: restart quota
+
+    - name: Enable quota on flagged partition
+      command: "quotaon {{ item.stat.path }}"
+      loop: "{{ quota_file.results | flatten(levels=1) }}"
+      notify: restart quota
+      ignore_errors: yes
+
+    #
+    # Install quotatool
+    #
+    - name: Check if quotatool exists
+      command:
+        cmd: which quotatool
+      ignore_errors: yes
+      register: quotatool_cmd
+
+    - name: Download quotatool install sources
+      git:
+        repo: 'https://github.com/ekenberg/quotatool.git'
+        dest: /tmp/quotatool
+        single_branch: yes
+        ssh_opts: '-c http.sslVerify=false'
+      when: quotatool_cmd.rc != 0
+      register: git_quotatool
+
+    - name: Configure quotatool installation
+      command:
+        cmd: './configure'
+        chdir: /tmp/quotatool
+      when: git_quotatool.changed
+
+    - name: Gmake quotatool installation
+      command:
+        cmd: 'gmake'
+        chdir: /tmp/quotatool
+      when: git_quotatool.changed
+
+    - name: Rename quotatool man file
+      copy:
+        src: /tmp/quotatool/man/quotatool.8
+        dest: /tmp/quotatool/man/quotatool.1
+        remote_src: yes
+      when: git_quotatool.changed
+
+    - name: Remove dublicated file
+      file:
+        path: /tmp/quotatool/man/quotatool.8
+        state: absent
+      when: git_quotatool.changed
+
+    - name: Adapt Makefile to newer FreeBSD version
+      lineinfile:
+        path: /tmp/quotatool/Makefile
+        search_string: '$(INSTALL_PROGRAM) -D $(srcdir)/$(prog) $(DESTDIR)$(sbindir)/$(prog)'
+        line: '$(INSTALL_PROGRAM) $(srcdir)/$(prog) $(DESTDIR)$(sbindir)/$(prog)'
+        owner: root
+        group: wheel
+        mode: 0644
+      when: git_quotatool.changed
+
+    - name: Adapt Makefile to newer FreeBSD version
+      lineinfile:
+        path: /tmp/quotatool/Makefile
+        search_string: '$(foreach man,$(men),$(INSTALL_DATA) -D $(man) $(DESTDIR)$(mandir)/man$(subst .,,$(suffix $(man)))/$(notdir $(man)))'
+        line: '$(foreach man,$(men),$(INSTALL_DATA) $(man) $(DESTDIR)$(mandir)/man$(subst .,,$(suffix $(man)))/$(notdir $(man)))'
+        owner: root
+        group: wheel
+        mode: 0644
+      when: git_quotatool.changed
+
+    - name: Install gmake quotatool
+      command:
+        cmd: 'gmake install'
+        chdir: /tmp/quotatool
+      when: git_quotatool.changed
+
+    - name: Clean gmake quotatool
+      command:
+        cmd: 'gmake clean'
+        chdir: /tmp/quotatool
+      when: git_quotatool.changed
+
+    - name: Remove git folder
+      file:
+        path: '/tmp/quotatool/'
+        state: absent
+      when: git_quotatool.changed
+  when: not quota_file is skipped

@@ -1,0 +1,35 @@
+---
+# tasks file for froxlorInstaller
+
+#
+# Setup Quotas
+#
+- name: Check for file system quota file
+  stat:
+    path: "{{ item.mount }}"
+  register: quota_file
+  when: ('usrquota' in item.options and 'grpquota' in item.options and froxlor_settings.diskquota_customer_partition in item.mount) # since only ext3/4 is supported by froxlor uquota,gquota are not necessary right now
+  loop: "{{ ansible_mounts | flatten(levels=1) }}"
+
+- name: Enable quota
+  block:
+    - name: Check if the user quota file exists
+      stat:
+        path: "{{ quota_file.results[0].stat.path | default('') }}/aquota.user"
+      register: usrquota_file
+
+    - name: Check if the group quota file exists
+      stat:
+        path: "{{ quota_file.results[0].stat.path | default('') }}/aquota.group"
+      register: grpquota_file
+
+    - name: Generate quota files for flagged partition
+      command: "quotacheck -cgum {{ item.stat.path }}"
+      when: not usrquota_file.stat.exists and not grpquota_file.stat.exists
+      loop: "{{ quota_file.results | flatten(levels=1) }}"
+
+    - name: Enable quota on flagged partition
+      command: "quotaon {{ item.stat.path }}"
+      loop: "{{ quota_file.results | flatten(levels=1) }}"
+      ignore_errors: yes
+  when: not quota_file is skipped

@@ -1,0 +1,16 @@
+---
+#
+# You can disable the management of the app
+# if you want to make changes to the configuration.
+# DO NOT ENABLE AGAIN or your changes will be overwritten.
+#
+main_timezone: Europe/Berlin
+# right now only ufw is supported
+firewall:
+  enable: true
+  programm: ufw
+powerdns:
+  enable_webserver: false
+# Right now only "mysql" and "mariadb" are the supported database engines.
+database:
+  engine: mariadb

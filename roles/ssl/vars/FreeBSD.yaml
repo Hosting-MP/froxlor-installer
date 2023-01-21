@@ -1,0 +1,5 @@
+---
+# System packages for FreeBSD
+ssl_packages:
+  - openssl
+  - ca_root_nss

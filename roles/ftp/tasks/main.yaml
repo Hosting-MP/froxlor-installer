@@ -1,0 +1,71 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+#
+# START TASK to build FreeBSD mail ports
+#
+
+- name: Fetch latest ports (THIS CAN TAKE MORE THAN ONE HOUR)
+  command:
+    cmd: portsnap cron
+    creates: /var/db/portsnap/files/
+  when: ansible_os_family == "FreeBSD"
+
+- name: Extract fetched ports (this can take a while)
+  command:
+    cmd: portsnap extract
+    creates: /usr/ports/
+  when: ansible_os_family == "FreeBSD"
+
+- name: Add MySQL as build dependency for pure-ftpd
+  lineinfile:
+    path: /usr/ports/ftp/pure-ftpd/Makefile
+    regexp: '^OPTIONS_DEFAULT=(.*(?<!MYSQL))$'
+    line: 'OPTIONS_DEFAULT=\1 MYSQL'
+    backrefs: yes
+    owner: root
+    group: wheel
+    mode: 0644
+  when: ansible_os_family == "FreeBSD"
+
+- name: Install pureftpd
+  community.general.portinstall:
+    name: ftp/pure-ftpd
+    use_packages: no
+    state: "{{ (froxlor_settings.ftpserver == 'pureftpd') | ternary('present', 'absent', 'absent') }}"
+  when: ansible_os_family == "FreeBSD"
+#
+# END TASK
+#
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ pureftpd_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.ftpserver == 'pureftpd')|default(false) }}"
+      - package_list: "{{ proftpd_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.ftpserver == 'proftpd')|default(false) }}"
+
+# Check if ssl-files for own-froxlor-vhost exist
+- name: Check if own-froxlor-vhost key exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key"
+  register: vhost_ssl_key
+- name: Check if own-froxlor-vhost cert exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.crt"
+  register: vhost_ssl_crt
+- name: Check if own-froxlor-vhost CA exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_CA.pem"
+  register: vhost_ssl_ca
+- name: Check if own-froxlor-vhost cert-chain exists exists
+  stat:
+    path: "{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_chain.pem"
+  register: vhost_ssl_chain
+
+# Add ftp install instructions
+- name: Run tasks to setup ftp server
+  include_tasks: "{{ froxlor_settings.ftpserver }}.yaml"

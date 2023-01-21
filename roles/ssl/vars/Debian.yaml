@@ -1,0 +1,6 @@
+---
+# System packages for Debian
+ssl_packages:
+  - openssl
+  - ssl-cert
+  - ca-certificates

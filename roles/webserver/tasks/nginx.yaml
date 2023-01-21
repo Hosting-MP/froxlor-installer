@@ -1,0 +1,61 @@
+---
+# Configure Nginx
+#
+
+# Create nginx config file
+- name: Create nginx config file
+  template:
+    src: templates/nginx/nginx.conf.j2
+    dest: "{{ etc_path }}nginx/nginx.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart nginx
+
+- name: Create available sites folder for nginx
+  file:
+    path: "{{ etc_path }}nginx/sites-available/"
+    state: directory
+    recurse: yes
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0755
+
+- name: Create enabled sites folder for nginx
+  file:
+    path: "{{ etc_path }}nginx/sites-enabled/"
+    state: directory
+    recurse: yes
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0755
+
+- name: Create extra configs folder for nginx
+  file:
+    path: "{{ etc_path }}nginx/conf.d/"
+    state: directory
+    recurse: yes
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0755
+
+#
+# Default server config
+#
+- name: Create default nginx server configuration
+  template:
+    src: templates/nginx/default-server.conf.j2
+    dest: "{{ etc_path }}nginx/sites-available/default"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart nginx
+
+- name: Enable default nginx server configuration
+  file:
+    src: "{{ etc_path }}nginx/sites-available/default"
+    dest: "{{ etc_path }}nginx/sites-enabled/default"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    state: link
+  notify: restart nginx

@@ -1,0 +1,158 @@
+---
+#
+# Configure Apache2
+#
+
+- name: Create necessary apache log directory
+  file:
+    path: "/var/log/{{ 'apache24' if 'FreeBSD' in ansible_os_family else 'httpd' if 'RedHat' in ansible_os_family else 'apache2' }}"
+    state: directory
+
+- name: Generate apache2 config
+  template:
+    src: "templates/apache2/{{ ansible_os_family }}_apache2.conf.j2"
+    dest: "{{ etc_path }}{{ 'apache24/httpd' if 'FreeBSD' in ansible_os_family else 'httpd/conf/httpd' if 'RedHat' in ansible_os_family else 'apache2/apache2' }}.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart apache2
+
+# Disable not required modules for apache2
+- name: Disable mod-php and userdir in apache2
+  command: "a2dismod userdir php{{ php_version }}"
+  register: a2dismod
+  changed_when: "'To activate the new configuration' in a2dismod.stdout"
+  notify: restart apache2
+  ignore_errors: yes
+  when: ansible_os_family == 'Debian'
+
+# Enable required modules for apache2
+- name: Enable rewrite, ssl and http2 in apache2
+  command: "a2enmod headers http2 rewrite ssl proxy_fcgi setenvif"
+  register: a2enmod
+  changed_when: "'To activate the new configuration' in a2enmod.stdout"
+  notify: restart apache2
+  when: ansible_os_family == 'Debian'
+
+# Enable required modules for apache2
+- name: Enable php-fpm in apache2
+  command: "a2enconf php{{ php_version }}-fpm"
+  register: a2enconf
+  changed_when: "'To activate the new configuration' in a2enconf.stdout"
+  notify: restart apache2
+  when: ansible_os_family == 'Debian'
+
+# Debian and FreeBSD save the fpm config in a separate file
+- name: Create php-fpm config
+  template:
+    src: templates/apache2/fpm.conf.j2
+    dest: "{{ etc_path }}{{ 'httpd/conf.d/php.conf' if 'RedHat' in ansible_os_family else 'apache2/conf-available/php' + php_version + '-fpm.conf' }}"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart apache2
+  when: ansible_os_family == 'Debian' or ansible_os_family == 'RedHat'
+
+# Create path for acme to put verify data in
+- name: Create acme verify path
+  template:
+    src: templates/apache2/acme.conf.j2
+    dest: "{{ etc_path }}{{ 'apache24/extra/httpd-' if 'FreeBSD' in ansible_os_family else 'httpd/conf.d/' if 'RedHat' in ansible_os_family else 'apache2/conf-available/' }}acme.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart apache2
+  when: froxlor_settings.leenabled
+
+# Create a symbolic link to make acme verify load on next apache2 start
+- name: Create acme verification mod
+  file:
+    src: "{{ etc_path }}apache2/conf-available/acme.conf"
+    dest: "{{ etc_path }}apache2/conf-enabled/acme.conf" #/usr/local/etc/apache24/modules.d
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    state: "{{ froxlor_settings.leenabled | ternary('link', 'absent') }}"
+  notify: restart apache2
+  when: froxlor_settings.leenabled and ansible_os_family == 'Debian'
+
+#
+# Configure mod-security2
+#
+
+# Create mod_security2 config file
+- name: Create mod_security2 config file
+  template:
+    src: templates/apache2/mod_security2.conf.j2
+    dest: "{{ etc_path }}{{ 'modsecurity/modsecurity.conf' if 'FreeBSD' in ansible_os_family else 'httpd/conf.d/mod_security.conf' if 'RedHat' in ansible_os_family else 'apache2/mods-available/security2.conf' }}"
+  notify: restart apache2
+  when: mod_security2.enable
+
+# Enable required module for mod-security2
+- name: "{{ mod_security2.enable | ternary('Enable', 'Disabled', 'Disable') }} mod-security2 in apache2"
+  command: "a2{{ mod_security2.enable | ternary('en', 'dis', 'dis') }}mod security2"
+  register: a2enmodsec2
+  changed_when: "'To activate the new configuration' in a2enmodsec2.stdout"
+  notify: restart apache2
+  when: ansible_os_family == 'Debian'
+
+# Copy script to manage scans of uploaded files
+- name: Copy ClamAV scan file to modsec dir
+  copy:
+    src: files/modsec-clamscan.lua
+    dest: "{{ etc_path }}{{ 'httpd/modsecurity.d' if 'RedHat' in ansible_os_family else 'modsecurity' }}/modsec-clamscan.lua"
+  when: mod_security2.scan_uploaded_files and mod_security2.enable
+
+# Download rules set from most up to date source
+- name: Download owasp crs
+  git:
+    repo: https://github.com/coreruleset/coreruleset
+    dest: /usr/local/modsecurity/crs/
+    single_branch: yes
+    version: "v3.1/master" #more recent version require ModSecurity v2.9.6 which is unavailable for FreeBSD 13.1 but will be released for FreeBSD 13.2 - the version setting can be removed then
+  when: mod_security2.enable and ansible_system == 'FreeBSD'
+
+- name: Check if crs config file exists
+  stat:
+    path: /usr/local/modsecurity/crs/crs-setup.conf
+  register: crs_configfile
+
+- name: Copy crs config file from example
+  copy:
+    src: /usr/local/modsecurity/crs/crs-setup.conf.example
+    dest: /usr/local/modsecurity/crs/crs-setup.conf
+    remote_src: yes
+    #force: no - workaround due to a bug at freebsd
+    owner: root
+    group: wheel
+    mode: 0644
+  when: ansible_system == 'FreeBSD' and not crs_configfile.stat.exists
+
+#
+# Configure mod-evasive
+# mod_evasive is not available at RedHat 8+
+#
+
+# Check if log dir exists and create if not
+- name: Create mod-evasiv log dir
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    mode: 0640
+  when: (item.name == "DOSLogDir") and mod_evasive.enable and ansible_os_family != 'RedHat'
+  loop: "{{ mod_evasive.settings }}"
+
+# Create mod_evasive config file
+- name: Create mod_evasive config file
+  template:
+    src: templates/apache2/mod_evasive.conf.j2
+    dest: "{{ etc_path }}{{ 'apache24/Includes/mod_' if 'FreeBSD' in ansible_os_family else 'apache2/mods-available/' }}evasive.conf"
+  notify: restart apache2
+  when: mod_evasive.enable and ansible_os_family != 'RedHat'
+
+# Enable required module for mod-evasiv
+- name: "{{ mod_evasive.enable | ternary('Enable', 'Disabled', 'Disable') }} mod-evasive in apache2"
+  command: "a2{{ mod_evasive.enable | ternary('en', 'dis', 'dis') }}mod evasive"
+  register: a2enmodev
+  changed_when: "'To activate the new configuration' in a2enmodev.stdout"
+  notify: restart apache2
+  when: ansible_os_family == 'Debian'

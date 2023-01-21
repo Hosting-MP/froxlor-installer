@@ -1,0 +1,4 @@
+---
+collections:
+  # Install collections from Ansible Galaxy
+  - name: community.general

@@ -1,0 +1,43 @@
+---
+# Execute tasks for Debian
+
+#
+# Setup APT
+#
+- name: Update all packages to their latest version
+  apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+
+- name: Update non-dist to latest version
+  apt:
+    autoclean: yes
+    upgrade: yes
+
+- name: Update dist to latest version
+  apt:
+    autoclean: yes
+    upgrade: dist
+
+- name: Install latest system packages
+  apt:
+    name: "{{ system_packages|default([]) }}"
+    state: latest
+    install_recommends: no
+#    autoremove: yes
+
+#
+# Set to unified timezone
+#
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ main_timezone | default('UTC') }}"
+  notify: restart cron
+
+#
+# Set hostname to froxlor hostname
+#
+- name: Set hostname
+  hostname:
+    name: "{{ froxlor_settings.hostname | default(ansible_hostname) }}"

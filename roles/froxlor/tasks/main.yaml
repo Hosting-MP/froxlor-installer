@@ -1,0 +1,37 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+#
+# Extract latest froxlor version to apache2 directory
+#
+- name: Check if froxlor files are already present
+  stat:
+    path: "{{ www_path }}lib/userdata.inc.php"
+  register: froxlor_files
+
+- name: Create froxlor local group for own vHost
+  group:
+    name: "{{ froxlor_settings.vhost_httpgroup|default('froxlorlocal') }}"
+    state: "{{ (froxlor_settings.enabled_ownvhost|default('false')) | ternary('present', 'absent') }}"
+
+- name: Create froxlor local user for own vHost
+  user:
+    name: "{{ froxlor_settings.vhost_httpuser|default('froxlorlocal') }}"
+    shell: /bin/false
+    create_home: no
+    group: "{{ froxlor_settings.vhost_httpgroup|default('froxlorlocal') }}"
+    state: "{{ (froxlor_settings.enabled_ownvhost|default('false')) | ternary('present', 'absent') }}"
+
+- name: Download froxlor webpanel
+  unarchive:
+    remote_src: yes
+    src: "https://files.froxlor.org/releases/froxlor-latest.tar.gz"
+    dest: "{{ www_path }}"
+    include: "froxlor/"
+    mode: 0755
+    owner: "{{ (froxlor_settings.vhost_httpuser if froxlor_settings.enabled_ownvhost else froxlor_settings.httpuser) if froxlor_settings.enabled_ownvhost is defined else ('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data') }}"
+    group: "{{ (froxlor_settings.vhost_httpgroup if froxlor_settings.enabled_ownvhost else froxlor_settings.httpgroup) if froxlor_settings.enabled_ownvhost is defined else ('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data') }}"
+    creates: "/var/www/html/froxlor/"
+  when: not froxlor_files.stat.exists

@@ -1,0 +1,64 @@
+{% if mod_security2 is defined %}
+{% if mod_security2.settings is defined %}
+{% if ansible_system == 'Linux' %}
+<IfModule security2_module>
+{% endif %}
+{% for setting in mod_security2.settings %}
+        {{ setting.name }} {{ setting.value }}
+{% endfor %}
+        SecDefaultAction "phase:2,deny,log,status:406"
+        SecRequestBodyLimitAction ProcessPartial
+        SecResponseBodyLimitAction ProcessPartial
+
+{% if ansible_os_family == 'Debian' %}
+        SecDebugLog /var/log/apache2/modsec_debug.log
+{% elif ansible_os_family == 'RedHat' %}
+        SecDebugLog /var/log/httpd/modsec_debug.log
+{% elif ansible_os_family == 'FreeBSD' %}
+        SecDebugLog /var/log/apache24/modsec_debug.log
+{% endif %}
+        SecDebugLogLevel 0
+        SecAuditEngine RelevantOnly
+
+        <IfModule mod_ruid2.c>
+            SecAuditLogDirMode 1733
+            SecAuditLogFileMode 0550
+            SecAuditLogType Concurrent
+            SecAuditLogStorageDir /var/log/modsec_audit
+        </IfModule>
+{% if ansible_os_family == 'Debian' %}
+        SecDebugLog /var/log/apache2/modsec_audit.log
+{% elif ansible_os_family == 'RedHat' %}
+        SecDebugLog /var/log/httpd/mmodsec_audit.log
+{% elif ansible_os_family == 'FreeBSD' %}
+        SecDebugLog /var/log/apache24/modsec_audit.log
+{% endif %}
+
+{% if mod_security2.scan_uploaded_files | default(false) %}
+        SecRule FILES_TMPNAMES "@inspectFile {{ etc_path }}{{ 'httpd/modsecurity.d' if 'RedHat' in ansible_os_family else 'modsecurity' }}/modsec-clamscan.lua" "phase:2,t:none,log,deny,msg:'Virus found in uploaded file!',id:'299999'"
+{% endif %}
+
+        # Include all the *.conf files in /etc/modsecurity.
+        # Keeping your local configuration in that directory
+        # will allow for an easy upgrade of THIS file and
+        # make your life easier
+
+        #IncludeOptional {{ etc_path }}modsecurity.d/*.conf.main
+        
+
+        # Include OWASP ModSecurity CRS rules if installed
+{% if ansible_os_family == 'Debian' %}
+        IncludeOptional {{ etc_path }}modsecurity/*.conf
+        IncludeOptional /usr/share/modsecurity-crs/*.load
+{% elif ansible_os_family == 'RedHat' %}
+        IncludeOptional {{ etc_path }}httpd/modsecurity.d/*.conf
+        IncludeOptional /etc/httpd/modsecurity.d/activated_rules/*.conf
+{% elif ansible_os_family == 'FreeBSD' %}
+        IncludeOptional /usr/local/modsecurity/crs/*.conf
+        IncludeOptional /usr/local/modsecurity/crs/rules/*.conf
+{% endif %}
+{% if ansible_system == 'Linux' %}
+</IfModule>
+{% endif %}
+{% endif %}
+{% endif %}

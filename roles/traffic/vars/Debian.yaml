@@ -1,0 +1,11 @@
+---
+# Awstats packages for Debian
+awstats_packages:
+  - awstats
+  - libnet-ip-perl
+  - libnet-dns-perl
+webalizer_packages:
+  - webalizer
+goaccess_packages:
+  - goaccess
+  - jq

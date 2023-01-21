@@ -1,0 +1,4 @@
+Alias "/.well-known/acme-challenge" "{{ froxlor_settings.letsencryptchallengepath | default("") }}.well-known/acme-challenge"
+<Directory "{{ froxlor_settings.letsencryptchallengepath | default("") }}.well-known/acme-challenge">
+	Require all granted
+</Directory>

@@ -1,0 +1,13 @@
+---
+# handlers file for froxlorInstaller
+
+- name: restart nscd
+  service:
+    name: nscd
+    state: restarted
+    enabled: yes
+  when: ansible_os_family == "RedHat"
+
+- name: invalidate nscd groups
+  command: "nscd --invalidate=group"
+  when: ansible_os_family == "RedHat"

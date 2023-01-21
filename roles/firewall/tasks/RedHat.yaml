@@ -1,0 +1,96 @@
+---
+# Execute tasks for Debian
+
+# Immediate firewall actions can be applied to a running daemon only
+- name: start firewalld
+  service:
+    name: firewalld
+    state: started
+
+#
+# Common port
+#
+- name: Enable required ports in firewalld
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop:
+    - ftp
+    - ssh
+    - http
+    - https
+    - smtp
+    - smtps
+    - smtp-submission
+    - pop3
+    - pop3s
+    - imap
+    - imap
+    - imaps
+    - dhcpv6-client
+#    ignore_erros: yes
+#   register: firewalld_enable_services
+  notify: start firewalld
+# - name: Enable required ports in firewalld
+#   ansible.posix.firewalld:
+#     port: "{{ item }}"
+#     permanent: yes
+#     immediate: yes
+#     state: enabled
+#   when: firewalld_enable_services.failed
+#   loop:
+#     - 21/tcp # FTP
+#     - 22/tcp # SSH
+#     - 80/tcp # HTTP
+#     - 443/tcp # HTTPS
+#     - 25/tcp # SMTP
+#     - 465/tcp # SMTPS
+#     - 587/tcp # Submission
+#     - 110/tcp # POP3
+#     - 995/tcp # POP3S
+#     - 143/tcp # IMAP
+#     - 993/tcp # IMAPS
+#     - 68/udp # DHCP
+#     - 546/udp # DHCPv6
+#     - 647/udp # DHCP-failover
+
+#
+# DNS port
+#
+- name: "{{ froxlor_settings.dnsenabled | ternary('Enable', 'Disabled', 'Disable') }} DNS traffic in firewalld"
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: "{{ froxlor_settings.dnsenabled | ternary('enabled', 'disabled', 'disabled') }}"
+  loop:
+    - dns
+    - dns-over-tls
+#    - 53/tcp # DNS
+#    - 53/udp # DNS
+#    - 853/tcp # DNS-DoT
+#    - 853/udp # DNS-DoT
+  notify: start firewalld
+
+#
+# NTP Port
+#
+- name: Check if ntp is enabled
+  shell:
+    cmd: "timedatectl status | grep -o 'NTP.*$'"
+  register: ntp_status
+- name: "{{ ('active' in ntp_status.stdout) | ternary('Enable', 'Disabled', 'Disable') }} NTP traffic in firewalld"
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: "{{ ('active' in ntp_status.stdout) | ternary('enabled', 'disabled', 'disabled') }}"
+  loop:
+    - ntp
+#    - 123/tcp # NTP
+#    - 123/udp # NTP
+#    - 853/tcp # NTPS
+#    - 853/udp # NTPS
+  notify: start firewalld

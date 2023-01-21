@@ -1,0 +1,67 @@
+# Includes DSO modules
+Include {{ etc_path }}proftpd/modules.conf
+
+UseIPv6				on
+
+ServerName			"{{ froxlor_settings.hostname }} FTP Server"
+ServerType			standalone
+DeferWelcome		off
+
+DefaultServer		on
+ShowSymlinks		on
+
+MaxInstances		30
+Port				21
+TimeoutNoTransfer	600
+TimeoutStalled		600
+TimeoutIdle			1200
+
+DisplayLogin		welcome.msg
+DisplayChdir		.message true
+ListOptions			"-l"
+
+DenyFilter			\*.*/
+
+{% if ansible_os_family == 'Debian' %}
+User				proftpd
+Group				nogroup
+{% elif ansible_os_family == 'RedHat' %}
+User				nobody
+Group				nobody
+{% elif ansible_os_family == 'FreeBSD' %}
+User				nobody
+Group				nogroup
+{% endif %}
+Umask				022 022
+AllowOverwrite		on
+
+
+TransferLog			/var/log/proftpd/xferlog
+SystemLog			/var/log/proftpd/proftpd.log
+
+<IfModule mod_quotatab.c>
+	QuotaEngine on
+</IfModule>
+
+<IfModule mod_ratio.c>
+	Ratios off
+</IfModule>
+
+<IfModule mod_delay.c>
+	DelayEngine on
+</IfModule>
+
+<IfModule mod_ctrls.c>
+ControlsEngine		off
+ControlsMaxClients	2
+ControlsLog			/var/log/proftpd/controls.log
+ControlsInterval	5
+ControlsSocket		/var/run/proftpd/proftpd.sock
+</IfModule>
+
+<IfModule mod_ctrls_admin.c>
+	AdminControlsEngine off
+</IfModule>
+
+Include {{ etc_path }}proftpd/sql.conf
+Include {{ etc_path }}proftpd/conf.d/

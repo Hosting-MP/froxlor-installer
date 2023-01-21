@@ -1,0 +1,5 @@
+---
+# FTP packages for FreeBSD
+proftpd_packages:
+  - proftpd
+  - proftpd-mod_sql_mysql

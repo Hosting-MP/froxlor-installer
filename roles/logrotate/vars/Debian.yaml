@@ -1,0 +1,4 @@
+---
+# Logrotate packages for Debian
+logrotate_packages:
+  - logrotate

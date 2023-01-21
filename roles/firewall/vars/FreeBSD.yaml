@@ -1,0 +1,2 @@
+---
+# Firewall packages for FreeBSD are not needed because IPFW is integrated natively into the system

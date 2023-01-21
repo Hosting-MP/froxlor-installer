@@ -1,0 +1,9 @@
+---
+# Security packages for Debian
+clamav_packages:
+  - clamav
+  - clamav-base
+  - clamav-freshclam
+  - clamav-daemon
+rkhunter_packages:
+  - rkhunter

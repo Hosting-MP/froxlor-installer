@@ -1,0 +1,121 @@
+---
+#
+# Create pre-required SQL configs
+#
+- name: Check if powerdns mysql config file has already been generated
+  stat:
+    path: "~/.powerdns.cnf"
+  register: pdns_mysql_file
+
+- name: Generate a random password
+  command: "cat /dev/urandom | env LC_CTYPE=C tr -dc _A-Z-a-z-0-9 | head -c 20 ; echo ;"
+  register: powerdns_mysql_passwd
+  when: not pdns_mysql_file.stat.exists
+
+- name: Insert/Update "Match User" configuration block in /etc/ssh/sshd_config
+  blockinfile:
+    path: "{{ pdns_mysql_file.stat.path }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    owner: root
+    group: pdns
+    mode: 0640
+    create: yes
+    block: |
+      [client]
+      # The following password is used by all powerdns MySQL clients
+      password={{ powerdns_mysql_passwd.stdout }}
+      user=powerdns
+      host=localhost
+      database=pdns
+  when: not pdns_mysql_file.stat.exists
+
+- name: Create powerdns database
+  community.mysql.mysql_db:
+    config_file:"~/.froxroot.cnf"
+    name: "{{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.powerdns.cnf') }}"
+    state: present
+  register: pdns_db_exists
+
+- name: Copy powerdns database schema file
+  copy:
+    src: files/powerdns_db_schema.sql
+    dest: /tmp/powerdns_db_schema.sql
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  register: pdns_db_schema_file
+  when: pdns_db_exists.changed
+
+- name: Import powerdns database schema
+  community.mysql.mysql_db:
+    config_file:"~/.froxroot.cnf"
+    name: "{{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.powerdns.cnf') }}"
+    state: import
+    target: {{ pdns_db_schema_file.dest }}
+  when:  pdns_db_schema_file.changed
+
+- name: Remove no longer used powerdns database schema file
+  ansible.builtin.file:
+    path: {{ pdns_db_schema_file.dest }}
+    state: absent
+  when: pdns_db_schema_file.changed
+
+- name: Create database user for powerdns with all database privileges
+  community.mysql.mysql_user:
+    config_file:"~/.froxroot.cnf"
+    name: "{{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.powerdns.cnf') }}"
+    password: "{{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.powerdns.cnf') }}"
+    priv: "{{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.powerdns.cnf') }}.*:ALL"
+    state: present
+
+- name: Enable reverse proxy for powerdns webserver
+  community.mysql.mysql_query:
+    config_file:"~/.froxlor.cnf"
+    query: "UPDATE `panel_ipsandports` SET {{ froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled | ternary('ssl_specialsettings', 'specialsettings') | default('specialsettings') }}=%(vhost_specialsettings)s WHERE `ip`='{{ item }}' AND `vhostcontainer`='1' AND `vhostcontainer_servername_statement`='1' AND `ssl`=%(vhost_ssl)s"
+    named_args:
+      vhost_specialsettings: "powerdns.webserver_enabled | ternary(('location /powerdns {\r\n proxy_pass http://localhost:8081;\r\n proxy_set_header Host $host;\r\n proxy_set_header X-Real-IP $remote_addr;\r\n proxy_set_header X-Forwarded-For $remote_addr;\r\n proxy_set_header Upgrade $http_upgrade;\r\n proxy_set_header Connection $http_connection;\r\n proxy_buffering off;\r\n}' if froxlor_settings.webserver == 'nginx' else '<Location /powerdns>\n ProxyPass http://127.0.0.1:8081\n ProxyPassReverse http://127.0.0.1:8081\n</Location>' if froxlor_settings.webserver == 'apache2' else ''), '') | default('')"
+      vhost_ssl: "{{ froxlor_settings.use_ssl and froxlor_settings.leenabled and froxlor_settings.le_froxlor_enabled | default('0') }}"
+  loop: "{{ froxlor_ip_list }}"
+
+#
+# Create service configuration
+#
+- name: Create config for powerdns
+  template:
+    src: templates/pdns.conf.j2
+    dest: "{{ etc_path }}powerdns/pdns.conf"
+    owner: root
+    group: pdns
+    mode: 0640
+  notify: restart powerdns
+  when: ansible_os_family == "Debian"
+
+- name: Create mysql config for powerdns
+  template:
+    src: templates/pdns_mysql.conf.j2
+    dest: "{{ etc_path }}powerdns/froxlor/pdns_froxlor.conf"
+    owner: root
+    group: pdns
+    mode: 0640
+  notify: restart powerdns
+  when: ansible_os_family == "Debian"
+
+- name: Create config for powerdns
+  template:
+    src: templates/pdns.conf.j2
+    dest: "{{ etc_path }}pdns/pdns.conf"
+    owner: root
+    group: pdns
+    mode: 0640
+  notify: restart powerdns
+  when: (ansible_os_family == "RedHat") or (ansible_os_family == "FreeBSD")
+
+- name: Create mysql config for powerdns
+  template:
+    src: templates/pdns_mysql.conf.j2
+    dest: "{{ etc_path }}pdns/froxlor/pdns_froxlor.conf"
+    owner: root
+    group: pdns
+    mode: 0640
+  notify: restart powerdns
+  when: (ansible_os_family == "RedHat") or (ansible_os_family == "FreeBSD")

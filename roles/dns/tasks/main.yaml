@@ -1,0 +1,17 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ powerdns_packages|default([]) }}"
+        package_status: "{{ ((froxlor_settings.dns_server == 'PowerDNS') if froxlor_settings.dnsenabled else false) |default(false) }}"
+      - package_list: "{{ bind_packages|default([]) }}"
+        package_status: "{{ ((froxlor_settings.dns_server == 'Bind')  if froxlor_settings.dnsenabled else false) |default(false) }}"
+
+# Add DNS setup instructions
+- name: Run tasks to setup the dns server
+  include_tasks: "{{ froxlor_settings.dns_server }}.yaml"
+  when: froxlor_settings.dnsenabled

@@ -1,0 +1,5 @@
+---
+# Nss packages for RedHat
+nss_packages:
+  - libnss-mysql
+  - nscd

@@ -1,0 +1,36 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ ssl_packages|default([]) }}"
+        package_status: "{{ true }}"
+
+#
+# Enable OpenSSL for port builds in FreeBSD
+#
+- name: Make OpenSSL available to port installs
+  lineinfile:
+    path: /etc/make.conf
+    search_string: 'DEFAULT_VERSIONS+=ssl=openssl'
+    line: 'DEFAULT_VERSIONS+=ssl=openssl'
+    owner: root
+    group: wheel
+    mode: 0644
+    create: yes
+  when: ansible_os_family == "FreeBSD"
+
+#
+# Generate DHparam
+#
+- name: Check if dhparam have already been generated
+  stat:
+    path: "{{ etc_path }}ssl/dhparam.pem"
+  register: dhparam_file
+
+- name: Generate OpenSSL DHparam
+  command: "openssl dhparam -dsaparam -out {{ etc_path }}ssl/dhparam.pem 4096"
+  when: not dhparam_file.stat.exists

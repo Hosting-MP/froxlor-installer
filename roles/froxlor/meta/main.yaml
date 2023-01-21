@@ -1,0 +1,6 @@
+---
+# List of dependencies for this role
+dependencies:
+  - role: system
+  - role: webserver
+  - role: php

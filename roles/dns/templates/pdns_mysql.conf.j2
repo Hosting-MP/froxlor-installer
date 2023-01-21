@@ -1,0 +1,7 @@
+launch=gmysql
+gmysql-host=127.0.0.1
+gmysql-port=3306
+gmysql-dbname={{ lookup('ansible.builtin.ini', 'database', section='client', file='~/.powerdns.cnf') }}
+gmysql-user={{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.powerdns.cnf') }}
+gmysql-group=client
+gmysql-password={{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.powerdns.cnf') }}

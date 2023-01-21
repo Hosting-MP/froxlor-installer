@@ -1,0 +1,64 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ apache2_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.webserver == 'apache2')|default(false) }}"
+      - package_list: "{{ nginx_packages|default([]) }}"
+        package_status: "{{ (froxlor_settings.webserver == 'nginx')|default(false) }}"
+      - package_list: "{{ 'lua54' if ansible_os_family == 'FreeBSD' else 'lua' if ansible_os_family == 'RedHat' else 'lua5.4' }}"
+        package_status: "{{ mod_security2.scan_uploaded_files|default(false) }}"
+
+# Copy config file to user space if it does not exist already
+- name: Copy premade config file to user space
+  copy:
+    src: "files/webserver.yaml"
+    dest: "{{ etc_path }}froxlor/webserver.yaml"
+    force: no
+  register: froxlor_webserver_config_file
+  when: froxlor_settings.webserver == 'apache2'
+
+- name: Create default webserver docroot
+  file:
+    path: "{{ www_path }}"
+    state: directory
+    owner: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+    group: "{{ ('apache2' in froxlor_settings.webserver) | ternary(('www' if ansible_os_family == 'FreeBSD' else 'apache' if ansible_os_family == 'RedHat' else 'www-data'), ('www' if ansible_os_family == 'FreeBSD' else 'nginx' if ansible_os_family == 'RedHat' else 'www-data')) }}"
+    mode: 0755
+
+# Load config file found in user space
+- name: Load config file from user space
+  include_vars: "{{ froxlor_webserver_config_file.dest }}"
+  when: froxlor_settings.webserver == 'apache2'
+
+# Add webserver install instructions
+- name: Run tasks to setup webserver
+  include_tasks: "{{ froxlor_settings.webserver }}.yaml"
+
+#
+# Create customer folders
+#
+- name: Create customer data and log folders
+  file:
+    path: '/var/customers/{{ item }}'
+    state: directory
+    recurse: yes
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0755
+  loop:
+    - 'webs/'
+    - 'logs/'
+
+- name: Create customer tmp folder
+  file:
+    path: '/var/customers/tmp/'
+    state: directory
+    recurse: yes
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 1777

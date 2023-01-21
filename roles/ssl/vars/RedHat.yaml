@@ -1,0 +1,5 @@
+---
+# System packages for RedHat
+ssl_packages:
+  - openssl
+  - ca-certificates

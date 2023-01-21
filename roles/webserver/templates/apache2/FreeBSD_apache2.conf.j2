@@ -1,0 +1,181 @@
+ServerRoot "/usr/local"
+Listen 80
+
+LoadModule mpm_event_module libexec/apache24/mod_mpm_event.so
+LoadModule authn_file_module libexec/apache24/mod_authn_file.so
+LoadModule authn_core_module libexec/apache24/mod_authn_core.so
+LoadModule authz_host_module libexec/apache24/mod_authz_host.so
+LoadModule authz_groupfile_module libexec/apache24/mod_authz_groupfile.so
+LoadModule authz_user_module libexec/apache24/mod_authz_user.so
+#LoadModule authz_owner_module libexec/apache24/mod_authz_owner.so
+LoadModule authz_core_module libexec/apache24/mod_authz_core.so
+#LoadModule authnz_fcgi_module libexec/apache24/mod_authnz_fcgi.so
+LoadModule access_compat_module libexec/apache24/mod_access_compat.so
+LoadModule auth_basic_module libexec/apache24/mod_auth_basic.so
+#LoadModule ratelimit_module libexec/apache24/mod_ratelimit.so
+LoadModule reqtimeout_module libexec/apache24/mod_reqtimeout.so
+#LoadModule ext_filter_module libexec/apache24/mod_ext_filter.so
+#LoadModule request_module libexec/apache24/mod_request.so
+LoadModule include_module libexec/apache24/mod_include.so
+LoadModule filter_module libexec/apache24/mod_filter.so
+#LoadModule deflate_module libexec/apache24/mod_deflate.so
+LoadModule mime_module libexec/apache24/mod_mime.so
+LoadModule log_config_module libexec/apache24/mod_log_config.so
+#LoadModule log_debug_module libexec/apache24/mod_log_debug.so
+LoadModule env_module libexec/apache24/mod_env.so
+LoadModule mime_magic_module libexec/apache24/mod_mime_magic.so
+#LoadModule expires_module libexec/apache24/mod_expires.so
+LoadModule headers_module libexec/apache24/mod_headers.so
+LoadModule setenvif_module libexec/apache24/mod_setenvif.so
+LoadModule version_module libexec/apache24/mod_version.so
+#LoadModule remoteip_module libexec/apache24/mod_remoteip.so
+LoadModule proxy_module libexec/apache24/mod_proxy.so
+#LoadModule proxy_connect_module libexec/apache24/mod_proxy_connect.so
+#LoadModule proxy_http_module libexec/apache24/mod_proxy_http.so
+LoadModule proxy_fcgi_module libexec/apache24/mod_proxy_fcgi.so
+#LoadModule proxy_balancer_module libexec/apache24/mod_proxy_balancer.so
+#LoadModule session_module libexec/apache24/mod_session.so
+#LoadModule session_cookie_module libexec/apache24/mod_session_cookie.so
+#LoadModule session_crypto_module libexec/apache24/mod_session_crypto.so
+LoadModule ssl_module libexec/apache24/mod_ssl.so
+#LoadModule dialup_module libexec/apache24/mod_dialup.so
+LoadModule http2_module libexec/apache24/mod_http2.so
+LoadModule proxy_http2_module libexec/apache24/mod_proxy_http2.so
+LoadModule unixd_module libexec/apache24/mod_unixd.so
+#LoadModule heartbeat_module libexec/apache24/mod_heartbeat.so
+#LoadModule heartmonitor_module libexec/apache24/mod_heartmonitor.so
+LoadModule status_module libexec/apache24/mod_status.so
+LoadModule autoindex_module libexec/apache24/mod_autoindex.so
+#LoadModule asis_module libexec/apache24/mod_asis.so
+#LoadModule info_module libexec/apache24/mod_info.so
+#LoadModule vhost_alias_module libexec/apache24/mod_vhost_alias.so
+LoadModule negotiation_module libexec/apache24/mod_negotiation.so
+LoadModule dir_module libexec/apache24/mod_dir.so
+#LoadModule imagemap_module libexec/apache24/mod_imagemap.so
+LoadModule alias_module libexec/apache24/mod_alias.so
+LoadModule rewrite_module libexec/apache24/mod_rewrite.so
+{% if mod_evasive.enable %}
+LoadModule evasive20_module libexec/apache24/mod_evasive20.so
+{% endif %}
+{% if mod_security2.enable %}
+LoadModule unique_id_module libexec/apache24/mod_unique_id.so
+LoadModule security2_module libexec/apache24/mod_security2.so
+Include /usr/local/etc/modsecurity/*.conf
+{% endif %}
+
+# Third party modules
+IncludeOptional etc/apache24/modules.d/[0-9][0-9][0-9]_*.conf
+
+<IfModule unixd_module>
+User www
+Group www
+</IfModule>
+ServerAdmin postmaster@{{ froxlor_settings.hostname | default(ansible_hostname) }}
+<Directory />
+    AllowOverride none
+    Require all denied
+</Directory>
+DocumentRoot "{{ www_path }}"
+<Directory "{{ www_path }}">
+    Options Indexes FollowSymLinks
+
+    #
+    # AllowOverride controls what directives may be placed in .htaccess files.
+    # It can be "All", "None", or any combination of the keywords:
+    #   AllowOverride FileInfo AuthConfig Limit
+    #
+    AllowOverride None
+
+    Require all granted
+</Directory>
+<IfModule proxy_fcgi_module>
+    <FilesMatch "\.(php|phtml|inc)$">
+        SetHandler "proxy:unix:/var/run/php{{ php_version }}-fpm.sock|fcgi://localhost/"
+    </FilesMatch>
+</IfModule>
+<IfModule dir_module>
+    DirectoryIndex index.html index.php
+</IfModule>
+<Files ".ht*">
+    Require all denied
+</Files>
+ErrorLog "/var/log/apache24/error.log"
+LogLevel warn
+<IfModule log_config_module>
+    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+    LogFormat "%h %l %u %t \"%r\" %>s %b" common
+
+    CustomLog "/var/log/apache24/access.log" combined
+</IfModule>
+<IfModule alias_module>
+    ScriptAlias /cgi-bin/ "/usr/local/www/apache24/cgi-bin/"
+</IfModule>
+<Directory "/usr/local/www/apache24/cgi-bin">
+    AllowOverride None
+    Options None
+    Require all granted
+</Directory>
+<IfModule headers_module>
+    # 'Proxy' request header is undefined by the IETF, not listed by IANA
+    RequestHeader unset Proxy early
+	Header set X-Frame-Options: "deny"
+	Header set X-Content-Type-Options "nosniff"
+</IfModule>
+<IfModule mime_module>
+    TypesConfig etc/apache24/mime.types
+
+    #
+    # AddType allows you to add to or override the MIME configuration
+    # file specified in TypesConfig for specific file types.
+    #
+    #AddType application/x-gzip .tgz
+    #
+    # AddEncoding allows you to have certain browsers uncompress
+    # information on the fly. Note: Not all browsers support this.
+    #
+    #AddEncoding x-compress .Z
+    #AddEncoding x-gzip .gz .tgz
+    #
+    # If the AddEncoding directives above are commented-out, then you
+    # probably should define those extensions to indicate media types:
+    #
+    AddType application/x-compress .Z
+    AddType application/x-gzip .gz .tgz
+
+    #
+    # AddHandler allows you to map certain file extensions to "handlers":
+    # actions unrelated to filetype. These can be either built into the server
+    # or added with the Action directive (see below)
+    #
+    # To use CGI scripts outside of ScriptAliased directories:
+    # (You will also need to add "ExecCGI" to the "Options" directive.)
+    #
+    #AddHandler cgi-script .cgi
+
+    # For type maps (negotiated resources):
+    #AddHandler type-map var
+
+    #
+    # Filters allow you to process content before it is sent to the client.
+    #
+    # To parse .shtml files for server-side includes (SSI):
+    # (You will also need to add "Includes" to the "Options" directive.)
+    #
+    #AddType text/html .shtml
+    #AddOutputFilter INCLUDES .shtml
+</IfModule>
+MIMEMagicFile etc/apache24/magic
+
+Include etc/apache24/extra/httpd-mpm.conf
+Include etc/apache24/extra/httpd-multilang-errordoc.conf
+Include etc/apache24/extra/httpd-languages.conf
+#Include etc/apache24/extra/httpd-vhosts.conf
+# Various default settings
+#Include etc/apache24/extra/httpd-default.conf
+
+<IfModule ssl_module>
+SSLRandomSeed startup builtin
+SSLRandomSeed connect builtin
+</IfModule>
+
+Include etc/apache24/Includes/*.conf

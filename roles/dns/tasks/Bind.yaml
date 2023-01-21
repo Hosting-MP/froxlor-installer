@@ -1,0 +1,35 @@
+---
+# Execute tasks for Debian
+
+# Create config file in bind directory because froxlor places its dns files here for some reason
+- name: Create dns config file
+  file:
+    path: "{{ froxlor_settings.bindconf_directory }}froxlor_bind.conf"
+    state: touch
+    owner: "{{ ('RedHat' in ansible_os_family) | ternary('named', 'bind') | default('bind') }}"
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+
+- name: Include froxlor config into bind
+  lineinfile:
+    path: "{{ froxlor_settings.bindconf_directory }}named.conf.local"
+    regexp: '^include "\/.*\/froxlor_bind\.conf";'
+    line: "include \"{{ froxlor_settings.bindconf_directory }}froxlor_bind.conf\";"
+  when: ansible_os_family == "Debian"
+  notify: restart bind
+
+- name: Include froxlor config into bind
+  lineinfile:
+    path: "{{ etc_path }}named.conf"
+    regexp: '^include "\/.*\/froxlor_bind\.conf";'
+    line: "include \"{{ froxlor_settings.bindconf_directory }}froxlor_bind.conf\";"
+  when: ansible_os_family == "RedHat"
+  notify: restart bind
+
+- name: Include froxlor config into bind
+  lineinfile:
+    path: "{{ froxlor_settings.bindconf_directory }}named.conf"
+    regexp: '^include "\/.*\/froxlor_bind\.conf";'
+    line: "include \"{{ froxlor_settings.bindconf_directory }}froxlor_bind.conf\";"
+  when: ansible_os_family == "FreeBSD"
+  notify: restart bind

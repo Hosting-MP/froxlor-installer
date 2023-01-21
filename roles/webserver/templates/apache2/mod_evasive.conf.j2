@@ -1,0 +1,9 @@
+{% if mod_evasive is defined %}
+{% if mod_evasive.settings is defined %}
+<IfModule mod_evasive20.c>
+{% for setting in mod_evasive.settings %}
+    {{ setting.name }}    {{ setting.value }}
+{% endfor %}
+</IfModule>
+{% endif %}
+{% endif %}

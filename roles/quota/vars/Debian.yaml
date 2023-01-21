@@ -1,0 +1,5 @@
+---
+# Quota packages for Debian
+quota_packages:
+  - quota
+  - quotatool

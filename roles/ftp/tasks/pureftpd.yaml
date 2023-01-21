@@ -1,0 +1,52 @@
+---
+# Execute tasks to install and configure pure-ftpd
+
+- name: Create mysql config for pureftpd
+  template:
+    src: templates/pureftpd/mysql.conf.j2
+    dest: "{{ etc_path }}pure-ftpd/db/mysql.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart pureftpd
+  when: ansible_os_family == "Debian"
+
+- name: Create mysql config for pureftpd
+  template:
+    src: templates/pureftpd/mysql.conf.j2
+    dest: "{{ etc_path }}pure-ftpd/pureftpd-mysql.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart pureftpd
+  when: ansible_os_family == "RedHat"
+
+- name: Create mysql config for pureftpd
+  template:
+    src: templates/pureftpd/mysql.conf.j2
+    dest: "{{ etc_path }}pureftpd-mysql.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart pureftpd
+  when: ansible_os_family == "FreeBSD"
+
+- name: Create main config for pureftpd
+  template:
+    src: templates/pureftpd/pure-ftpd.conf.j2
+    dest: "{{ etc_path }}pure-ftpd/pure-ftpd.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart pureftpd
+  when: (ansible_os_family == "Debian") or (ansible_os_family == "RedHat")
+
+- name: Create main config for pureftpd
+  template:
+    src: templates/pureftpd/pure-ftpd.conf.j2
+    dest: "{{ etc_path }}pure-ftpd.conf"
+    owner: root
+    group: "{{ ('FreeBSD' in ansible_system) | ternary('wheel', 'root') | default('root') }}"
+    mode: 0644
+  notify: restart pureftpd
+  when: ansible_os_family == "FreeBSD"

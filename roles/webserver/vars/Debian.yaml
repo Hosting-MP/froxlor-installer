@@ -1,0 +1,9 @@
+---
+# WebServer packages for Debian
+apache2_packages:
+  - apache2
+  - libapache2-mod-security2
+  - modsecurity-crs
+  - libapache2-mod-evasive
+nginx_packages:
+  - nginx

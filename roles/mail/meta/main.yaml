@@ -1,0 +1,5 @@
+---
+# List of dependencies for this role
+dependencies:
+  - role: database
+  - role: ssl

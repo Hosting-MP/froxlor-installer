@@ -1,0 +1,8 @@
+---
+# FTP packages for RedHat
+proftpd_packages:
+  - proftpd
+  - proftpd-mysql
+pureftpd_packages:
+  - pure-ftpd-common
+  - pure-ftpd-mysql

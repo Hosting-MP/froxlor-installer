@@ -1,0 +1,42 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+# Copy config file to user space if it does not exist already
+- name: Copy premade config file to user space
+  copy:
+    src: "files/{{ ansible_os_family }}.php.yaml"
+    dest: "{{ etc_path }}froxlor/php.yaml"
+    force: no
+  register: froxlor_php_config_file
+
+# Load config file found in user space
+- name: Load config file from user space
+  include_vars: "{{ etc_path }}froxlor/php.yaml"
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ [php.version] | product(php.extensions) | map('join', '-') | list }}"
+        package_status: "{{ true }}"
+      - package_list: "{{ php.version + '-composer2' if ansible_os_family == 'FreeBSD' else 'composer' }}"
+        package_status: "{{ true }}"
+  notify:
+    - "restart {{ froxlor_settings.webserver }}"
+    - restart php-fpm
+
+# Add general php install instructions
+- name: Run tasks to setup webserver
+  include_tasks: "php.yaml"
+
+# Add ioncube install instructions
+# since ioncube is limited to certain php version (e.g. no PHPv8.0) we are filtering this out
+- name: Run tasks to setup webserver
+  include_tasks: "ioncube.yaml"
+  when: php_version in allowed_php_versions
+  vars:
+    allowed_php_versions:
+      - 7.3
+      - 7.4
+      - 8.1

@@ -1,0 +1,5 @@
+disable_plaintext_auth = no
+auth_mechanisms = plain login
+{% if ansible_os_family != 'FreeBSD' %}
+!include auth-sql.conf.ext
+{% endif %}

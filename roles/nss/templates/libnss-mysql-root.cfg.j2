@@ -1,0 +1,2 @@
+username	{{ lookup('ansible.builtin.ini', 'user', section='client', file='~/.froxlor.cnf') }}
+password	{{ lookup('ansible.builtin.ini', 'password', section='client', file='~/.froxlor.cnf') }}

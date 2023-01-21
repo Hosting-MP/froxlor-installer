@@ -1,0 +1,9 @@
+---
+# FTP packages for Debian
+proftpd_packages:
+  - proftpd-basic
+  - proftpd-mod-mysql
+  - proftpd-mod-crypto
+pureftpd_packages:
+  - pure-ftpd-common
+  - pure-ftpd-mysql

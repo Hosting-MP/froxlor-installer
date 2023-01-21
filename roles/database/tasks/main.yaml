@@ -1,0 +1,11 @@
+---
+# tasks file for froxlorInstaller
+
+- import_tasks: 'roles/system/tasks/load-vars.yaml'
+
+- import_tasks: 'roles/system/tasks/manage-software-installations.yaml'
+  vars:
+    packages:
+      - package_list: "{{ database_packages|default([]) }}"
+        package_status: "{{ true }}"
+  notify: restart mysql

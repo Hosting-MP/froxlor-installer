@@ -1,0 +1,21 @@
+---
+#
+# Configure clamav
+#
+
+# Create a new directory with reduced user rights and access
+- name: Creates directory in home for files detected by clamav
+  file:
+    path: "{{ clamav.quarantineDir }}"
+    state: directory
+    mode: 0444
+
+# Right now we handle this by cron only
+- name: Creates a cron file under /etc/cron.d to run clamav daily
+  cron:
+    name: Run a daily scan over the customer directories
+    special_time: daily
+    user: root
+    job: "clamscan --max-filesize={{ clamav.maxFileSize }} --max-scansize={{ clamav.maxFileSize }} --recursive --move={{ clamav.quarantineDir }} --infected {{ clamav.customerDataDir }}"
+    cron_file: clamd-froxlor
+  notify: reload cron

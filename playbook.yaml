@@ -1,0 +1,21 @@
+---
+- name: running on localhost only
+  hosts: localhost
+  connection: local
+  roles:
+    - system
+    - ssl
+    - database
+    - mail
+    - ftp
+    - dns
+    - nss
+    - webserver
+    - php
+    - security
+    - traffic
+    - firewall
+    - logrotate
+    - phpmyadmin
+    - quota
+    - froxlor
