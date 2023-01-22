@@ -5,3 +5,4 @@
     name: "{{ 'cron' if 'Debian' in ansible_os_family else 'crond' }}"
     state: reloaded
     enabled: yes
+  when: ('Debian' not in ansible_os_family)
