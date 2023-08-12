@@ -21,3 +21,8 @@
   file:
     path: /etc/cron.d/awstats # this is in /etc for FreeBSD too
     state: absent
+
+- name: Remove awstats logrotate
+  file:
+    path: "{{ etc_path }}logrotate.d/httpd-prerotate/awstats"
+    state: absent
