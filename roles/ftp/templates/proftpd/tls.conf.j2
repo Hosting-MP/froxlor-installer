@@ -9,7 +9,7 @@ TLSRSACertificateFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settin
 TLSRSACertificateKeyFile	{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}.key
 TLSCACertificateFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_CA.pem
 TLSCertificateChainFile		{{ froxlor_settings.customer_ssl_path }}{{ froxlor_settings.hostname }}_chain.pem
-TLSOptions					NoCertRequest NoSessionReuseRequired
+TLSOptions					NoSessionReuseRequired
 TLSVerifyClient				off
 </IfModule>
 {% endif %}
