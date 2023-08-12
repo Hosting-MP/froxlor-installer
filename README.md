@@ -72,9 +72,9 @@ EOF
 ```
 
 ## ~~Configure specific app~~ NOT WORKING
-~~Running all tasks everytime you have changed a configuration in froxlor does not break anything but you can save time by executing the configuration utility for the app you changed settings only.  ~~
-~~Run the following command **as root**:  ~~
-~~`cd /etc/froxlor && ansible localhost -m include_role -a name=< ftp | webserver | php >`  ~~
+~~Running all tasks everytime you have changed a configuration in froxlor does not break anything but you can save time by executing the configuration utility for the app you changed settings only.~~  
+~~Run the following command **as root**:~~  
+~~`cd /etc/froxlor && ansible localhost -m include_role -a name=< ftp | webserver | php >`~~  
 THIS IS NOT WORKING RIGHT NOW. USE FULL RECONFIGURATION INSTEAD.
 
 # Disable additional features
