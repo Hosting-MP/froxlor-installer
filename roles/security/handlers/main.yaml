@@ -2,7 +2,7 @@
 # handlers file for froxlorInstaller
 - name: reload cron
   service:
-    name: "{{ 'cron' if 'Debian' in ansible_os_family else 'crond' }}"
+    name: "{{ 'crond' if 'RedHat' in ansible_os_family else 'cron' }}"
     state: reloaded
     enabled: yes
   when: ('Debian' not in ansible_os_family)
